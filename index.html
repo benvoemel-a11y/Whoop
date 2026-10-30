@@ -246,15 +246,15 @@ function ring(val,max,color,text,sub,size=120,stroke=9){
    stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p)}" transform="rotate(-90 ${size/2} ${size/2})"/>
   <text x="50%" y="${size/2+size*.1}" text-anchor="middle" fill="var(--fg)" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="600" font-size="${size*.3}">${text}</text></svg>`;
 }
-function cmp(v,a,unit,lowerIsBetter){
+function cmp(v,a,unit,lowerIsBetter,show){
   if(v==null||a==null)return '<span class="cmp">kein Vergleich</span>';
   const diff=v-a,rel=Math.abs(diff)/(Math.abs(a)||1);
   const cls=rel<.03?'flat':((diff>0)!==!!lowerIsBetter?'up':'down');
   const arrow=rel<.03?'→':diff>0?'↑':'↓';
-  return `<span class="cmp"><span class="${cls}">${arrow}</span>Ø 30 T: ${fmt(a,unit)}</span>`;
+  return `<span class="cmp"><span class="${cls}">${arrow}</span>Ø 30 T: ${show?show(a):fmt(a,unit)}</span>`;
 }
 function stat(label,v,unit,a,dec=0,lower=false,disp){return `<div class="stat"><span class="label">${label}</span>
-  <span class="v num">${disp??fmt(v,dec)}<small>${unit}</small></span>${cmp(v,a,dec,lower)}</div>`}
+  <span class="v num">${disp??fmt(v,dec)}<small>${unit}</small></span>${cmp(v,a,dec,lower,disp!=null?hm:null)}</div>`}
 
 function bars(keys,valFn,colorFn,max,h=120){
   const w=320,pad=18,bw=(w-pad)/keys.length;
