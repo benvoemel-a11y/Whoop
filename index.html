@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793326267";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793326580";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -256,6 +256,18 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .pace i{position:absolute;top:-6px;bottom:-6px;width:4px;margin-left:-2px;border-radius:2px;background:#fff}
 .impb{margin-left:auto;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:var(--card);font-size:11px;font-weight:800;letter-spacing:.08em;cursor:pointer}
 .impb svg{width:16px;height:16px}
+.morehead{display:flex;align-items:center;gap:16px;padding:22px 0 8px}
+.grp{background:var(--card);border-radius:16px;margin-top:10px;overflow:hidden}
+.grp summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary b{display:block;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.grp summary small{display:block;color:var(--muted);font-size:13px;margin-top:3px}
+.gch{width:14px;height:14px;display:grid;color:var(--muted);transition:transform .2s;flex:none}
+.grp[open] .gch{transform:rotate(90deg)}
+.gb{padding:0 16px 16px}
+.gb .field,.gb .tog{background:var(--card-2)}
+.gb .steps-list{background:var(--card-2)}
+.btn[disabled]{cursor:default}
 .prompt-w{position:relative}
 .prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
 .prompt-x svg{width:16px;height:16px}
@@ -883,34 +895,41 @@ function vAge(k){const b=bioAge(k),p=pace(k);
   ${b.parts.map(([l,sh,dd])=>`<div class="mrow" style="grid-template-columns:minmax(0,1fr) auto auto"><span class="mlbl">${l}</span><span class="num" style="color:var(--muted);font-size:16px">${sh}</span><b class="num" style="font-size:20px;min-width:70px;text-align:right;color:${dd<=0?'var(--mint)':'var(--red)'}">${dd>0?'+':dd<0?'−':'±'}${fmt(Math.abs(dd),1)} J</b></div>`).join('')}
   <p class="about" style="margin-top:16px">Eine Schätzung aus deinen Durchschnittswerten der letzten 30 Tage, verglichen mit typischen Werten für dein Alter (${b.A}). Keine medizinische Aussage. Mit Whoop-Daten wird sie genauer als mit Garmin-Werten.</p>
   <div class="field"><label for="age">Dein Alter</label><input id="age" inputmode="numeric" value="${b.A}"></div>`}
-function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</span></div>
-  <div class="avrow"><span class="avatar big" style="background:${avc()};color:${avtx(avc())}">${esc((store.name||'B')[0].toUpperCase())}</span>
-    <div class="swatches" role="radiogroup" aria-label="Farbe des Profilbilds">${AVC.map(([c,n])=>`<button class="sw-c" role="radio" aria-checked="${avc()===c}" aria-label="${n}" data-act="avcol" data-c="${c}" style="background:${c}"></button>`).join('')}</div></div>
-  <label class="btn g" for="file" style="margin-top:10px">WITHINGS IMPORTIEREN</label>
-  <div class="field"><label for="age">Alter</label><input id="age" inputmode="numeric" value="${esc(store.age||'')}" placeholder="Jahre"></div>
-  <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
-  <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>
-  <button class="tog" data-act="togglegarmin" aria-pressed="${!store.hideGarmin}" style="width:100%;margin-top:24px"><span>Garmin-Bereich anzeigen</span><span class="sw"></span></button>
-  ${store.hideGarmin?'':`<div class="sec"><span>Garmin automatisch</span></div>
-  <ol class="steps-list">
+const moreOpen=new Set();
+function grp(id,title,sub,body){return `<details class="grp" data-g="${id}" ${moreOpen.has(id)?'open':''}><summary><span><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span><span class="gch">${I.chev}</span></summary><div class="gb">${body}</div></details>`}
+function vMore(){const nd=Object.keys(store.daily||{}).length;
+  return `<div class="morehead"><span class="avatar big" style="background:${avc()};color:${avtx(avc())}">${esc((store.name||'B')[0].toUpperCase())}</span><span class="dtx"><b style="font-size:20px">${esc(store.name||'Bene')}</b><span>${store.real?nd+' Tage mit eigenen Daten':'Beispieldaten aktiv'}</span></span></div>
+  ${grp('profil','Profil','Name, Alter, Farbe, Schlafbedarf',`
+    <div class="swatches" style="margin-bottom:6px" role="radiogroup" aria-label="Farbe des Profilbilds">${AVC.map(([c,n])=>`<button class="sw-c" role="radio" aria-checked="${avc()===c}" aria-label="${n}" data-act="avcol" data-c="${c}" style="background:${c}"></button>`).join('')}</div>
+    <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
+    <div class="field"><label for="age">Alter</label><input id="age" inputmode="numeric" value="${esc(store.age||'')}" placeholder="Jahre"></div>
+    <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>`)}
+  ${grp('import','Daten importieren','Garmin, Withings, OpenStrap',`
+    <label class="btn w" for="file" style="margin-top:0">DATEI AUSWÄHLEN</label>
+    <label class="btn g" for="file">WITHINGS IMPORTIEREN</label>
+    <button class="btn g" data-go="geraete">GERÄTE VERWALTEN</button>
+    <div class="msg" id="msg" role="status"></div>`)}
+  ${store.hideGarmin?'':grp('garmin','Garmin automatisch','Mit dem Programm auf dem Mac',`
+    <ol class="steps-list" style="margin-top:0">
     <li>Einmalig im <b>Terminal</b> auf dem Mac:<br><code class="cmd">pip3 install garminconnect</code><br><code class="cmd">curl -O https://raw.githubusercontent.com/benvoemel-a11y/Whoop/main/tools/garmin_export.py</code></li>
     <li>Werte holen (beim ersten Mal mit Garmin-Login):<br><code class="cmd">python3 garmin_export.py</code></li>
-    <li>Hier unten <b>Datei auswählen</b> → iCloud Drive → Whoop → <b>garmin.json</b>.</li></ol>
-  <p class="about">Holt die letzten 30 Tage: Schlaf mit Phasen, HRV, Ruhepuls, Atemfrequenz, Stress, Trainingsbereitschaft als Erholung, Aktivitäten und Gewicht. Erneut importieren ist sicher, nichts wird doppelt gezählt.</p>
-  <div class="sec"><span>Werte selbst eintragen</span></div>
-  <p class="about">Falls etwas fehlt, kannst du einzelne Tage auch von Hand ergänzen.</p>
-  <button class="btn g" data-act="entry">TAG EINTRAGEN</button>`}
-  <div class="sec"><span>Gewicht aus Withings</span></div>
-  <p class="about">Exportiere deine Daten in deinem Withings-Konto und wähle die Datei <b>weight.csv</b> unten aus. Gewicht und Körperfett landen dann im Dashboard.</p>
-  <div class="sec"><span>Daten aus OpenStrap</span></div>
-  <ol class="steps-list"><li>Band in der <b>OpenStrap-App</b> synchronisieren.</li><li>Dort den <b>CSV-Export</b> öffnen und „Daily metrics“, „Sleep stages“ und „Workouts“ exportieren.</li><li>Die Dateien hier auswählen. Vorhandene Tage werden aktualisiert, nichts wird doppelt gezählt.</li></ol>
-  <label class="btn w" for="file">DATEI AUSWÄHLEN (GARMIN, WITHINGS, OPENSTRAP)</label>
-  <div class="msg" id="msg" role="status"></div>
-  <button class="btn g" data-act="demo">${store.real?'BEISPIELDATEN ANSEHEN':'BEISPIELDATEN WERDEN ANGEZEIGT'}</button>
-  ${store.real?'':(Object.keys(store.daily).length?'<button class="btn g" data-act="mine">MEINE DATEN ANZEIGEN</button>':'')}
-  <button class="btn warn" data-act="wipe" id="wipe">MEINE DATEN LÖSCHEN</button>
-  <div class="sec"><span>Über</span></div>
-  <p class="about">Deine Daten bleiben nur auf diesem Gerät. Das Band wird über OpenStrap Edge synchronisiert, diese App zeigt die Werte an. Erholung und Belastung stammen aus den Berechnungen von OpenStrap, nicht von Whoop.</p>`}
+    <li>Unter <b>Daten importieren</b> → iCloud Drive → Whoop → <b>garmin.json</b>.</li></ol>
+    <p class="about">Holt die letzten 30 Tage. Erneut importieren ist sicher, nichts wird doppelt gezählt.</p>`)}
+  ${store.hideGarmin?'':grp('eintragen','Werte selbst eintragen','Einzelne Tage von Hand',`<button class="btn g" data-act="entry" style="margin-top:0">TAG EINTRAGEN</button>`)}
+  ${grp('openstrap','Whoop-Band (OpenStrap)','So kommen die Band-Daten rein',`<ol class="steps-list" style="margin-top:0"><li>Band in der <b>OpenStrap-App</b> synchronisieren.</li><li>Dort den <b>CSV-Export</b> öffnen und „Daily metrics“, „Sleep stages“ und „Workouts“ exportieren.</li><li>Unter <b>Daten importieren</b> auswählen.</li></ol>`)}
+  ${grp('einst','Einstellungen','Anzeige und Beispieldaten',`
+    <button class="tog" data-act="togglegarmin" aria-pressed="${!store.hideGarmin}" style="width:100%"><span>Garmin-Bereich anzeigen</span><span class="sw"></span></button>
+    <button class="btn g" data-act="demo">${store.real?'BEISPIELDATEN ANSEHEN':'BEISPIELDATEN WERDEN ANGEZEIGT'}</button>
+    ${store.real?'':(nd?'<button class="btn g" data-act="mine">MEINE DATEN ANZEIGEN</button>':'')}`)}
+  ${grp('loeschen','Daten löschen','Alles auf diesem Gerät zurücksetzen',`<p class="about" style="margin-top:0">Löscht alle importierten Werte, Logbuch-Antworten und Geräte. Profil und Einstellungen bleiben.</p><button class="btn warn" data-act="wipe1">MEINE DATEN LÖSCHEN …</button>`)}
+  ${grp('ueber','Über die App','',`<p class="about" style="margin-top:0">Deine Daten bleiben nur auf diesem Gerät. Das Band wird über OpenStrap Edge synchronisiert, diese App zeigt die Werte an. Erholung und Belastung stammen aus den Berechnungen von OpenStrap, nicht von Whoop.</p>`)}`}
+
+function sheetWipe(step){const nd=Object.keys(store.daily||{}).length,nj=Object.keys(store.journal||{}).length;
+  if(step===1)openSheet('DATEN LÖSCHEN',`<p class="otext" style="margin:6px 0 0;color:var(--muted);font-size:17px;line-height:1.5">Willst du wirklich alle deine Daten löschen?<br><br>Betroffen: <b style="color:var(--fg)">${nd} Tage</b> mit Werten und <b style="color:var(--fg)">${nj} Logbuch-Tage</b>. Das lässt sich nicht rückgängig machen.</p>
+    <button class="btn w" data-act="close" style="margin-top:22px">NEIN, ABBRECHEN</button><button class="btn warn" data-act="wipe2">JA, WEITER</button>`);
+  else openSheet('LETZTE BESTÄTIGUNG',`<p style="color:var(--muted);font-size:17px;line-height:1.5;margin:6px 0 14px">Tippe zur Bestätigung <b style="color:var(--fg)">LÖSCHEN</b> ein.</p>
+    <input id="wipeword" autocomplete="off" autocapitalize="characters" placeholder="LÖSCHEN" style="width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:12px;color:var(--fg);padding:14px;font:inherit;text-align:center;letter-spacing:.1em">
+    <button class="btn w" data-act="close" style="margin-top:18px">ABBRECHEN</button><button class="btn warn" data-act="wipe3" id="wipe3" disabled style="opacity:.4">ENDGÜLTIG LÖSCHEN</button>`)}
 
 /* ---------- Blätter ---------- */
 function openSheet(title,body){$('#sheetBox').innerHTML=`<div class="sheet-h"><span></span><span>${title}</span><button data-act="close" aria-label="Schließen">${I.x}</button></div>${body}`;$('#sheet').hidden=false}
@@ -1007,8 +1026,9 @@ function act(a,el){
   else if(a==='jsave'){save();toast('Logbuch gespeichert');go(prevView==='logbuch'?'home':prevView||'home')}
   else if(a==='demo'){store.real=false;save();cur=null;pickData();render()}
   else if(a==='mine'){store.real=true;save();cur=null;pickData();render()}
-  else if(a==='wipe'){if(el.dataset.sure){const keep={need:store.need,name:store.name,dash:store.dash};store=Object.assign(DEF(),keep);save();cur=null;pickData();render();toast('Daten gelöscht')}
-    else{el.dataset.sure='1';el.textContent='WIRKLICH LÖSCHEN? NOCHMAL TIPPEN'}}
+  else if(a==='wipe1')sheetWipe(1);
+  else if(a==='wipe2')sheetWipe(2);
+  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,hideGarmin:store.hideGarmin,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-act]');if(!t)return;if(t.dataset.go){$('#sheet').hidden=true;go(t.dataset.go)}else act(t.dataset.act,t)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('#sheet').hidden=true});
@@ -1022,6 +1042,8 @@ document.addEventListener('change',async e=>{
     if(done.length){store.real=true;save();cur=null;pickData();render();const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.'}
     else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Nimm den CSV-Export aus OpenStrap (Daily metrics, Sleep stages oder Workouts).'}}}
 });
+document.addEventListener('input',e=>{if(e.target.id==='wipeword'){const ok=e.target.value.trim().toUpperCase()==='LÖSCHEN',b=$('#wipe3');if(b){b.disabled=!ok;b.style.opacity=ok?1:.4}}});
+document.addEventListener('toggle',e=>{const g=e.target&&e.target.dataset&&e.target.dataset.g;if(g){if(e.target.open)moreOpen.add(g);else moreOpen.delete(g)}},true);
 addEventListener('keydown',e=>{if(e.key==='Escape')$('#sheet').hidden=true;if(e.key==='Enter'&&e.target.id==='newq'){e.preventDefault();const c=$('#newcat');addQ(e.target.value,c&&c.value)}});
 function fromHash(h){if(h.startsWith('m-')&&MET[h.slice(2)]){metricKey=h.slice(2);return'metric'}return DETAIL[h]||MAIN.includes(h)||SUB.includes(h)?h:null}
 addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v&&(v!==view||v==='metric')){if(!SUB.includes(view))prevView=view;view=v;render()}});
