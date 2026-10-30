@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#2b333a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -36,7 +36,10 @@
   --ui:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:dark;
 }
-html{background:var(--bg)}
+html{background:var(--bg);-webkit-text-size-adjust:100%;touch-action:pan-x pan-y;overscroll-behavior:none}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior-y:none}
+input,textarea,select{font-size:16px!important;-webkit-user-select:text;user-select:text}
+button,a,label{touch-action:manipulation}
 body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:15px;-webkit-font-smoothing:antialiased;min-height:100%}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg-top);z-index:10}
 .bgfx{position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,var(--bg-top) 0%,#222a30 40%,var(--bg) 100%)}
@@ -219,6 +222,17 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .wl{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:10px 12px;margin-top:10px}
 .wl span{flex:1;min-width:0}
 .wl b{font-weight:700}
+.dev{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:14px 16px;margin-top:10px}
+.dic{width:42px;height:42px;border-radius:50%;background:var(--card-2);display:grid;place-items:center;flex:none}
+.dic svg{width:22px;height:22px}
+.dtx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.dtx b{font-size:15px;font-weight:700}
+.dtx span{color:var(--muted);font-size:13px}
+.dok{color:var(--mint);width:20px;display:grid}
+.devc{padding:12px 14px}
+.devh{display:flex;align-items:center;gap:14px;width:100%}
+.dch{width:20px;display:grid;color:var(--muted)}
+.devc .steps-list{background:var(--card-2);margin-top:12px}
 .prompt-w{position:relative}
 .prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
 .prompt-x svg{width:16px;height:16px}
@@ -310,6 +324,7 @@ nav svg{width:28px;height:28px}
 
 
 <div class="bgfx"></div>
+<script>["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});</script>
 <header><div class="in" id="head"></div></header>
 <main class="in" id="view"></main>
 <nav aria-label="Hauptnavigation"><div class="row" id="nav"></div></nav>
@@ -352,6 +367,7 @@ const I={
   flame:sv('<path d="M12 21c4 0 6.5-2.6 6.5-6.2C18.5 10 13 8.5 13 3c-3 2-5 5-4.5 8C7 10.5 6.5 9 6.5 9 5.5 10.5 5 12.5 5 14.8 5 18.4 8 21 12 21z"/>'),
   restore:sv('<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/><circle cx="12" cy="12" r="2.5"/>'),
   sun:sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>'),
+  watch:sv('<rect x="6" y="6" width="12" height="12" rx="6"/><path d="M9 6l.8-3h4.4l.8 3M9 18l.8 3h4.4l.8-3M12 9v3l2 1.5"/>'),
   strap:sv('<rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6V3h6v3M9 18v3h6v-3"/>'),
   info:sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5" stroke-width="2.4"/>'),
   pulse:sv('<path d="M3 12h4l2-4 4 8 2-4h6"/>'),
@@ -385,6 +401,8 @@ function stageOf(v){const s=String(v).toLowerCase();
   if(s.includes('wake')||s.includes('awake'))return'wake';
   if(s.includes('deep')||s.includes('sws')||s.includes('n3'))return'deep';
   if(s.includes('rem'))return'rem';return'light'}
+const DEV={whoop:{n:'Whoop 4.0',sub:'über OpenStrap Edge',ic:'strap'},garmin:{n:'Garmin',sub:'Forerunner und andere Uhren',ic:'watch'},withings:{n:'Withings',sub:'Waage für Gewicht und Körperfett',ic:'scale'}};
+function addDev(t){store.devices=store.devices||{};store.devices[t]=Object.assign({added:Date.now()},store.devices[t],{last:Date.now()})}
 function importGarmin(o){if(!o||!Array.isArray(o.days))return null;
   const stress=v=>v==null?null:+(clamp(v,0,100)*3/100).toFixed(1);
   o.days.forEach(d=>{if(!d.date)return;const{date,...v}=d;if('stress'in v)v.stress=stress(v.stress);if(v.rec!=null)v.rec=Math.round(clamp(v.rec,0,100));
@@ -394,7 +412,7 @@ function importGarmin(o){if(!o||!Array.isArray(o.days))return null;
   const seen=new Set(store.workouts.map(w=>w.start));
   (o.workouts||[]).forEach(w=>{if(!w.start||!w.date||seen.has(w.start))return;seen.add(w.start);store.workouts.push(Object.assign({},w,{strain:toStrain(wStrain(w.dur,w.avg)),src:'garmin'}))});
   o.days.forEach(d=>{const x=store.daily[d.date];if(x&&(x.strain==null||x.strainAuto)){x.strain=estStrain(d.date);x.strainAuto=true}});
-  return o.days.length+' Tage aus Garmin'}
+  addDev('garmin');return o.days.length+' Tage aus Garmin'}
 function importRows(rows){
   if(!rows.length)return null;const h=Object.keys(rows[0]);
   const wk=h.find(x=>/^(weight|gewicht)/.test(x));
@@ -402,13 +420,13 @@ function importRows(rows){
     rows.forEach(r=>{const raw=r[dk];let d=/^\d{4}-\d{2}-\d{2}/.test(raw)?raw.slice(0,10):null,t=Date.parse(String(raw).replace(' ','T'));if(!d&&!isNaN(t))d=iso(new Date(t));
       const w=n(String(r[wk]).replace(',','.'));if(!d||w==null)return;if(!best[d]||t>best[d].t){const fm=fk?n(String(r[fk]).replace(',','.')):null;best[d]={t,w,f:fm!=null&&w?+(fm/w*100).toFixed(1):null}}});
     Object.entries(best).forEach(([d,v])=>{store.daily[d]=Object.assign({},store.daily[d],{weight:+v.w.toFixed(1)},v.f!=null?{fat:v.f}:{})});
-    return Object.keys(best).length?'Gewicht':null}
+    if(Object.keys(best).length)addDev('withings');return Object.keys(best).length?'Gewicht':null}
   if(h.includes('readiness')||h.includes('resting_hr')){
     rows.forEach(r=>{if(!r.date)return;let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
       store.daily[r.date]=Object.assign({},store.daily[r.date],{rec:rec==null?null:Math.round(rec),rhr:n(r.resting_hr),hrv:n(r.hrv),resp:n(r.resp_rate),strain:n(r.strain),
         kcal:n(r.total_calories),akcal:n(r.active_calories),sleep:n(r.sleep_min),deep:n(r.deep_min),rem:n(r.rem_min),
         light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress),src:'openstrap'})});
-    return'Tageswerte'}
+    addDev('whoop');return'Tageswerte'}
   if(h.includes('stage')){
     const by={};rows.forEach(r=>{const a=ts(r.start_ts),b=ts(r.end_ts);if(!r.date||a==null||b==null)return;(by[r.date]=by[r.date]||[]).push([a,b,stageOf(r.stage)])});
     Object.entries(by).forEach(([d,l])=>store.sleep[d]=l.sort((x,y)=>x[0]-y[0]));return'Schlafphasen'}
@@ -550,7 +568,6 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[k],jn=j?Object.keys(j)
     <button class="dial" data-go="belastung" aria-label="Belastung ${fmt(x.strain,1)}">${ring(x.strain==null?0:x.strain/21,'var(--strain)',{inner:rtext(110,fmt(x.strain,1),'',30)})}<span class="dlab">BELASTUNG ${I.chev}</span></button>
   </div>
   ${monitors(k)}
-  ${store.daily[iso(new Date())]||store.hideGarmin?'':`<div class="prompt-w"><button class="prompt" data-go="mehr">${I.plus}<span><b>WERTE FÜR HEUTE EINTRAGEN</b><span>Garmin-Datei importieren oder selbst eintragen</span></span></button><button class="prompt-x" data-act="hidegarmin" aria-label="Ausblenden">${I.x}</button></div>`}
   <div class="h-row"><h2 class="h1">Mein Tag</h2><button class="plus" data-go="logbuch" aria-label="Logbuch ausfüllen">${I.plus}</button></div>
   <button class="outlook" data-go="ausblick">${I.sun}<span>Täglicher Ausblick</span><span class="chev">${I.chev}</span></button>
   ${acts(k)}
@@ -754,10 +771,26 @@ function saveEntry(quiet){const{k,o,any}=readEntry(),hasW=store.workouts.some(w=
   if(auto)store.daily[k].strain=estStrain(k);
   if(store.daily[k].sleep!=null&&store.daily[k].eff==null&&store.daily[k].bed&&store.daily[k].up)store.daily[k].eff=Math.round(store.daily[k].sleep/((store.daily[k].up-store.daily[k].bed)/6e4)*100);
   store.real=true;save();if(!quiet){cur=k;pickData()}return k}
+const SETUP={
+  whoop:['Band am Akku-Pack voll laden.','Die offizielle Whoop-App löschen, falls sie installiert ist. Das Band kann immer nur mit einer App verbunden sein.','<b>OpenStrap Edge</b> öffnen, Bluetooth erlauben und das Band koppeln.','Eine Nacht tragen. Danach gibt es Erholung und Schlafphasen.','In OpenStrap den <b>CSV-Export</b> öffnen: „Daily metrics“, „Sleep stages“ und „Workouts“ exportieren und hier auswählen.'],
+  garmin:['Auf dem Mac im Terminal einmalig: <code class="cmd">pip3 install garminconnect</code> und <code class="cmd">curl -O https://raw.githubusercontent.com/benvoemel-a11y/Whoop/main/tools/garmin_export.py</code>','Werte holen: <code class="cmd">python3 garmin_export.py</code>','Hier die Datei <b>garmin.json</b> aus iCloud Drive → Whoop auswählen.'],
+  withings:['Im Withings-Konto die Daten exportieren.','Hier die Datei <b>weight.csv</b> auswählen.']};
+let devOpen=null;
+function vDevices(){const ds=store.devices||{},list=Object.keys(ds);
+  const when=t=>t?new Date(t).toLocaleDateString('de-DE',{day:'numeric',month:'short'})+', '+tm(t):'–';
+  return `<h2 class="jtitle">Geräte</h2><p class="jsub">${store.real?'Deine Werte kommen von diesen Geräten.':'Gerade siehst du Beispieldaten. Füge ein Gerät hinzu, um deine eigenen Werte zu sehen.'}</p>
+  ${list.length?list.map(t=>`<div class="dev"><span class="dic">${I[DEV[t].ic]}</span><span class="dtx"><b>${DEV[t].n}</b><span>Letzter Import: ${when(ds[t].last)}</span></span><span class="dok">${I.check}</span></div>`).join(''):''}
+  <label class="btn w" for="file" style="margin-top:16px">NEUE DATEN IMPORTIEREN</label>
+  <div class="msg" id="msg" role="status"></div>
+  <div class="sec"><span>Gerät hinzufügen</span></div>
+  ${Object.entries(DEV).map(([t,d])=>`<div class="card devc"><button class="devh" data-act="devopen" data-t="${t}" aria-expanded="${devOpen===t}"><span class="dic">${I[d.ic]}</span><span class="dtx"><b>${d.n}</b><span>${d.sub}</span></span><span class="dch">${devOpen===t?I.x:I.plus}</span></button>
+    ${devOpen===t?`<ol class="steps-list">${SETUP[t].map(x=>`<li>${x}</li>`).join('')}</ol><label class="btn w" for="file">DATEI AUSWÄHLEN</label>`:''}</div>`).join('')}
+  <p class="about" style="margin-top:18px">Die App selbst verbindet sich nicht per Bluetooth. Das Band koppelst du in OpenStrap Edge, die App liest den Export. So bleiben alle Daten auf deinem Handy.</p>
+  ${list.length?'<button class="btn warn" data-act="devreset">GERÄTELISTE LEEREN</button>':''}`}
 function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</span></div>
   <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
   <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>
-  <button class="tog" data-act="togglegarmin" aria-pressed="${!store.hideGarmin}" style="width:100%;margin-top:24px"><span>Garmin &amp; Eintragen anzeigen</span><span class="sw"></span></button>
+  <button class="tog" data-act="togglegarmin" aria-pressed="${!store.hideGarmin}" style="width:100%;margin-top:24px"><span>Garmin-Bereich anzeigen</span><span class="sw"></span></button>
   ${store.hideGarmin?'':`<div class="sec"><span>Garmin automatisch</span></div>
   <ol class="steps-list">
     <li>Einmalig im <b>Terminal</b> auf dem Mac:<br><code class="cmd">pip3 install garminconnect</code><br><code class="cmd">curl -O https://raw.githubusercontent.com/benvoemel-a11y/Whoop/main/tools/garmin_export.py</code></li>
@@ -806,12 +839,13 @@ function sheetOutlook(k){const x=D(k),t=target(x.rec),ni=nightInfo(k),nn=need(sh
 
 /* ---------- Kopf, Leiste, Steuerung ---------- */
 const DETAIL={ueberblick:'ÜBERBLICK',schlaf:'SCHLAF',erholung:'ERHOLUNG',belastung:'BELASTUNG'};
-const SUB=['logbuch','ausblick','metric','eintragen'];const MAIN=['home','trends','mehr'];
+const SUB=['logbuch','ausblick','metric','eintragen','geraete'];const MAIN=['home','trends','mehr'];
 const TT={belastung:'BELASTUNG',erholung:'ERHOLUNG',schlaf:'SCHLAF'};
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])}
 function dayLabel(k){const t=iso(new Date());return k===t?'HEUTE':k===shift(t,-1)?'GESTERN':fromIso(k).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()}
 function head(){const ds=days(),i=ds.indexOf(cur);
-  const strap=`<span class="strap" title="${store.real?'Eigene Daten':'Beispieldaten'}">${!store.real?'DEMO ':D(cur).src==='garmin'?'GARMIN ':''}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></span>`;
+  const lbl=!store.real?'DEMO':({garmin:'GARMIN',openstrap:'WHOOP'})[D(cur).src]||'';
+  const strap=`<button class="strap" data-go="geraete" aria-label="Geräte">${lbl?lbl+' ':''}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></button>`;
   const av=SUB.includes(view)?`<button class="avatar" style="background:rgba(255,255,255,.08);color:#fff" data-act="back" aria-label="Zurück"><span style="width:18px;height:18px;display:grid">${I.l}</span></button>`:`<button class="avatar" data-go="mehr" aria-label="Profil">${esc((data.name||'B')[0].toUpperCase())}</button>`;
   let mid;
   if(view==='mehr')mid='<span class="htitle">MEHR</span>';
@@ -827,7 +861,7 @@ function navHtml(){const it=[['home','Startseite','home'],['ueberblick','Überbl
   return it.map(([v,l,ic])=>`<button data-go="${v}" ${act===v?'aria-current="page"':''}>${I[ic]}<span>${l}</span></button>`).join('')}
 function render(){
   $('#head').innerHTML=head();$('#nav').innerHTML=navHtml();
-  const V={home:()=>vHome(cur),ueberblick:()=>vOverview(cur),schlaf:()=>vSleep(cur),erholung:()=>vRec(cur),belastung:()=>vStrain(cur),trends:vTrends,logbuch:()=>vJournal(cur),mehr:vMore,ausblick:()=>vOutlook(cur),metric:()=>vMetric(metricKey,cur),eintragen:vEntry};
+  const V={home:()=>vHome(cur),ueberblick:()=>vOverview(cur),schlaf:()=>vSleep(cur),erholung:()=>vRec(cur),belastung:()=>vStrain(cur),trends:vTrends,logbuch:()=>vJournal(cur),mehr:vMore,ausblick:()=>vOutlook(cur),metric:()=>vMetric(metricKey,cur),eintragen:vEntry,geraete:vDevices};
   $('#view').innerHTML=(V[view]||V.home)();
 }
 function pickData(){data=store.real&&Object.keys(store.daily).length?store:demo();const ds=days();if(!ds.includes(cur))cur=ds[ds.length-1];if(trendEnd&&!ds.includes(trendEnd))trendEnd=null}
@@ -851,6 +885,8 @@ function act(a,el){
   else if(a==='rmq'){store.customQ=(store.customQ||[]).filter(c=>c.id!==el.dataset.q);save();if(data!==store)data.customQ=store.customQ;if(!store.customQ.length)jEdit=false;render()}
   else if(a==='jedit'){jEdit=!jEdit;render()}
   else if(a==='hidegarmin'){store.hideGarmin=true;save();render();toast('Ausgeblendet. Unter „Mehr“ wieder einschaltbar.')}
+  else if(a==='devopen'){devOpen=devOpen===el.dataset.t?null:el.dataset.t;render()}
+  else if(a==='devreset'){store.devices={};save();render()}
   else if(a==='togglegarmin'){store.hideGarmin=!store.hideGarmin;save();render()}
   else if(a==='entry'){entryDate=el.dataset.d||(store.real&&cur&&store.daily[cur]?cur:iso(new Date()));go('eintragen')}
   else if(a==='addw'){const k=saveEntry(true),dur=n($('#a_dur').value),avg=n($('#a_avg').value),[h,m]=($('#a_start').value||'17:00').split(':').map(Number);
