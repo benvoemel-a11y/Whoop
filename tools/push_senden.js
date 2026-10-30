@@ -1,6 +1,6 @@
 // Schickt Erinnerungen an das iPhone. Läuft in GitHub Actions alle 15 Minuten.
 // Erwartet das Secret PUSH_CONFIG (aus der App kopiert):
-// {"sub":{...},"pub":"...","priv":"...","rem":[{"t":"07:00","title":"...","body":"...","url":"./#mehr","on":true}],"mon":{"day":1,"t":"10:00","on":true}}
+// {"sub":{...},"pub":"...","priv":"...","rem":[{"t":"07:00","days":[1,2,3,4,5],"title":"...","body":"...","url":"./#mehr","on":true}],"mon":{"day":1,"t":"10:00","on":true}}
 const webpush = require('web-push');
 const fs = require('fs');
 const STATE = 'state/sent.json';
@@ -26,6 +26,9 @@ const parts = Object.fromEntries(new Intl.DateTimeFormat('de-DE', {
 }).formatToParts(new Date()).map(p => [p.type, p.value]));
 const nowMin = (parseInt(parts.hour, 10) % 24) * 60 + parseInt(parts.minute, 10);
 const day = parseInt(parts.day, 10);
+const WD = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+const weekday = WD[new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Berlin', weekday: 'short' }).format(new Date())];
+const onDay = r => !Array.isArray(r.days) || r.days.length === 0 || r.days.includes(weekday);
 const WINDOW = 50; // Minuten Spielraum, weil GitHub Zeitpläne oft verspätet startet
 const today = `${parts.year}-${parts.month}-${String(day).padStart(2, '0')}`;
 
@@ -36,7 +39,7 @@ const mode = process.env.MODE || 'auto';
 const out = [];
 if (mode === 'test') out.push({ title: 'Test', body: 'Benachrichtigungen funktionieren.', url: './#home', tag: 'test' });
 else {
-  rem.forEach((r, i) => { const k = today + ' ' + r.t; if (r.on !== false && due(r.t) && !sent[k]) { sent[k] = 1; out.push({ title: r.title || 'Erinnerung', body: r.body || '', url: r.url || './#mehr', tag: 'rem' + i }); } });
+  rem.forEach((r, i) => { const k = today + ' ' + r.t; if (r.on !== false && onDay(r) && due(r.t) && !sent[k]) { sent[k] = 1; out.push({ title: r.title || 'Erinnerung', body: r.body || '', url: r.url || './#mehr', tag: 'rem' + i }); } });
   const mk = today + ' mon ' + mon.t;
   if (mon.on !== false && day === Number(mon.day) && due(mon.t) && !sent[mk]) { sent[mk] = 1; out.push({ title: 'Neuer Monat', body: 'Zieh deinen Withings-Bericht und importiere ihn unter Gewicht.', url: './#m-weight', tag: 'withings' }); }
   // nur die letzten Tage behalten

@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793330970";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793331147";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -274,6 +274,9 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .remtop{display:flex;align-items:center;gap:10px}
 .remrow input{background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--fg);padding:9px;font:inherit;min-width:0}
 .remtop input[type=time]{flex:1}
+.wdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.wd{padding:8px 0;border-radius:8px;background:var(--bg);color:var(--dim);font-size:12px;font-weight:800;text-align:center;border:1px solid var(--line)}
+.wd[aria-pressed="true"]{background:var(--fg);color:#111;border-color:var(--fg)}
 .mini-tog{background:none!important;padding:0!important;width:auto}
 .savebox{border:1px solid var(--yellow);border-radius:12px;padding:12px;margin-top:14px}
 .savebox b{color:var(--yellow);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
@@ -935,12 +938,13 @@ const DEF_MON=()=>({day:1,t:'10:00',on:true});
 const pRem=()=>store.pushRem||(store.pushRem=DEF_REM());const pMon=()=>store.pushMon||(store.pushMon=DEF_MON());
 function cfgString(){if(!store.push)return '';return JSON.stringify(Object.assign(JSON.parse(store.push),{rem:pRem(),mon:pMon()}))}
 function pushDirty(){if(!store.pushSaved)return true;if(store.pushSavedCfg)return cfgString()!==store.pushSavedCfg;return JSON.stringify(pRem())!==JSON.stringify(DEF_REM())||JSON.stringify(pMon())!==JSON.stringify(DEF_MON())}
-function pushSub(){if(!store.push)return 'Erinnerungen zu deinen Wunschzeiten';const on=pRem().filter(r=>r.on!==false).map(r=>r.t.replace(/^0/,'')).join(', ');return pushDirty()?'Änderung noch nicht auf GitHub gespeichert':'Aktiv · '+(on||'keine Uhrzeit')+' Uhr'}
+function pushSub(){if(!store.push)return 'Erinnerungen zu deinen Wunschzeiten';const on=pRem().filter(r=>r.on!==false).length+' Erinnerungen';return pushDirty()?'Änderung noch nicht auf GitHub gespeichert':'Aktiv · '+on}
 function pushBody(){
   if(!pushOk())return `<p class="about" style="margin-top:0">Benachrichtigungen funktionieren nur, wenn du die App über das Icon auf dem Home-Bildschirm öffnest (ab iOS 16.4). In Safari selbst geht es nicht.</p>`;
   if(!store.push)return `<p class="about" style="margin-top:0">Die App erinnert dich um <b>7, 14 und 22 Uhr</b> ans Importieren und am <b>1. jedes Monats</b> an deinen Withings-Bericht.</p><button class="btn w" data-act="pushon">BENACHRICHTIGUNGEN AKTIVIEREN</button><div class="msg" id="pmsg" role="status"></div>`;
   const dirty=pushDirty(),first=!store.pushSaved;
   const rows=pRem().map((r,i)=>`<div class="remrow"><div class="remtop"><input type="time" id="rt-${i}" value="${esc(r.t)}" aria-label="Uhrzeit"><button class="tog mini-tog" data-act="remtog" data-i="${i}" aria-pressed="${r.on!==false}" aria-label="Ein oder aus"><span class="sw"></span></button><button class="rm" data-act="remdel" data-i="${i}" aria-label="Erinnerung löschen">${I.x}</button></div>
+    <div class="wdays" role="group" aria-label="Wochentage">${['Mo','Di','Mi','Do','Fr','Sa','So'].map((d,j)=>`<button class="wd" data-act="remday" data-i="${i}" data-d="${j+1}" aria-pressed="${!r.days||!r.days.length||r.days.includes(j+1)}">${d}</button>`).join('')}</div>
     <input id="rtt-${i}" value="${esc(r.title)}" placeholder="Titel" maxlength="40" aria-label="Titel"><input id="rtb-${i}" value="${esc(r.body)}" placeholder="Text" maxlength="120" aria-label="Text"></div>`).join('');
   const mo=pMon();
   const editor=`<div class="sec" style="margin-top:4px"><span>Deine Erinnerungen</span></div>${rows||'<p class="hint">Keine Erinnerung eingestellt.</p>'}
@@ -1089,6 +1093,8 @@ function act(a,el){
   else if(a==='pushoff')pushOff();
   else if(a==='pushsaved'){store.pushSaved=true;store.pushSavedCfg=cfgString();save();render();toast('Gespeichert')}
   else if(a==='remadd'){pRem().push({t:'09:00',title:'Erinnerung',body:'',url:'./#home',on:true});save();render()}
+  else if(a==='remday'){const r=pRem()[+el.dataset.i],d=+el.dataset.d;let ds=r.days&&r.days.length?r.days.slice():[1,2,3,4,5,6,7];
+    ds=ds.includes(d)?ds.filter(x=>x!==d):[...ds,d].sort();if(!ds.length){toast('Mindestens ein Tag');return}r.days=ds.length===7?[]:ds;save();render()}
   else if(a==='remdel'){pRem().splice(+el.dataset.i,1);save();render()}
   else if(a==='remtog'){const r=pRem()[+el.dataset.i];r.on=r.on===false;save();render()}
   else if(a==='montog'){const m=pMon();m.on=m.on===false;save();render()}
