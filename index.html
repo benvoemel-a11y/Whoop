@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793325794";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793326059";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -244,6 +244,11 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;flex:1;min-width:0}
 .sw-c{width:100%;aspect-ratio:1;max-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.15);justify-self:center}
 .sw-c[aria-checked="true"]{outline:3px solid #fff;outline-offset:2px}
+.wrow{display:grid;grid-template-columns:1fr auto 64px;gap:10px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line)}
+.wrow:last-child{border-bottom:0}
+.wrow span:first-child{color:var(--muted);font-size:14px}
+.wrow b{font-size:18px;font-weight:600}
+.wrow span:last-child{color:var(--muted);text-align:right;font-size:14px}
 .prompt-w{position:relative}
 .prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
 .prompt-x svg{width:16px;height:16px}
@@ -427,10 +432,10 @@ function importGarmin(o){if(!o||!Array.isArray(o.days))return null;
 function importRows(rows){
   if(!rows.length)return null;const h=Object.keys(rows[0]);
   const wk=h.find(x=>/^(weight|gewicht)/.test(x));
-  if(wk&&!h.includes('readiness')){const fk=h.find(x=>/^(fat mass|fettmasse)/.test(x)),dk=h.find(x=>/^(date|datum)/.test(x))||h[0],best={};
+  if(wk&&!h.includes('readiness')){const fk=h.find(x=>/^(fat mass|fettmasse)/.test(x)),mk=h.find(x=>/^(muscle|muskel)/.test(x)),bk=h.find(x=>/^(bone|knochen)/.test(x)),hk=h.find(x=>/^(hydration|wasser|körperwasser)/.test(x)),num=(r,k)=>k?n(String(r[k]).replace(',','.')):null,dk=h.find(x=>/^(date|datum)/.test(x))||h[0],best={};
     rows.forEach(r=>{const raw=r[dk];let d=/^\d{4}-\d{2}-\d{2}/.test(raw)?raw.slice(0,10):null,t=Date.parse(String(raw).replace(' ','T'));if(!d&&!isNaN(t))d=iso(new Date(t));
-      const w=n(String(r[wk]).replace(',','.'));if(!d||w==null)return;if(!best[d]||t>best[d].t){const fm=fk?n(String(r[fk]).replace(',','.')):null;best[d]={t,w,f:fm!=null&&w?+(fm/w*100).toFixed(1):null}}});
-    Object.entries(best).forEach(([d,v])=>{store.daily[d]=Object.assign({},store.daily[d],{weight:+v.w.toFixed(1)},v.f!=null?{fat:v.f}:{})});
+      const w=n(String(r[wk]).replace(',','.'));if(!d||w==null)return;if(!best[d]||t>best[d].t){const fm=fk?n(String(r[fk]).replace(',','.')):null;best[d]={t,w,f:fm!=null&&w?+(fm/w*100).toFixed(1):null,mu:num(r,mk),bo:num(r,bk),hy:num(r,hk)}}});
+    Object.entries(best).forEach(([d,v])=>{store.daily[d]=Object.assign({},store.daily[d],{weight:+v.w.toFixed(1)},v.f!=null?{fat:v.f}:{},v.mu!=null?{muscle:+v.mu.toFixed(1)}:{},v.bo!=null?{bone:+v.bo.toFixed(1)}:{},v.hy!=null&&v.w?{water:+(v.hy/v.w*100).toFixed(1)}:{})});
     if(Object.keys(best).length)addDev('withings');return Object.keys(best).length?'Gewicht':null}
   if(h.includes('readiness')||h.includes('resting_hr')){
     rows.forEach(r=>{if(!r.date)return;let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
@@ -719,7 +724,7 @@ const MINFO={hrv:'Die Herzfrequenzvariabilität misst, wie stark der Abstand zwi
   strain:'Deine Tagesbelastung auf einer Skala von 0 bis 21. Sie steigt mit der Zeit, die dein Puls erhöht ist.',
   steps:'Deine Schritte am Tag, gezählt vom Band.',kcal:'Dein gesamter Kalorienverbrauch am Tag, inklusive Grundumsatz.',akcal:'Die Kalorien, die du zusätzlich durch Bewegung verbraucht hast.',
   stress:'Wie stark dein Körper über den Tag aktiviert war, von 0 bis 3. Unter 1 ist ruhig, ab 2 hoch.',
-  weight:'Dein Gewicht, aus Withings importiert oder selbst eingetragen. Schwankungen von bis zu einem Kilo am Tag sind normal, zum Beispiel durch Wasser und Essen.',
+  weight:'Dein Gewicht, aus Withings importiert oder selbst eingetragen. Die Kacheln zeigen die letzte Messung deiner Waage. Schwankungen von bis zu einem Kilo am Tag sind normal, zum Beispiel durch Wasser und Essen.',
   fat:'Dein Körperfettanteil laut Waage. Achte eher auf den Verlauf über Wochen als auf einzelne Tage.'};
 const strip=h=>String(h).replace(/<[^>]+>/g,'');
 function barChart(keys,vals,m,key,avg){
@@ -729,21 +734,36 @@ function barChart(keys,vals,m,key,avg){
   const y=v=>T+ih-(clamp(v,lo,hi)-lo)/(hi-lo)*ih,bw=iw/keys.length;
   let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verlauf ${m.n}">`;
   [lo,(lo+hi)/2,hi].forEach(t=>{s+=`<line x1="${L}" x2="${W-Rp}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end">${strip(m.v(t))}</text>`});
-  keys.forEach((k,i)=>{const v=vals[i];if(v==null)return;const c=key==='rec'?recCol(v):MCOL[key]||'var(--muted)';
+  if(BODY.includes(key)){let path='';keys.forEach((k,i)=>{const v=vals[i];if(v==null)return;path+=(path?'L':'M')+(L+i*bw+bw/2)+' '+y(v)});s+=`<path d="${path}" fill="none" stroke="#c9d2d8" stroke-width="2"/>`;
+    keys.forEach((k,i)=>{const v=vals[i];if(v!=null)s+=`<circle cx="${L+i*bw+bw/2}" cy="${y(v)}" r="4.5" fill="var(--bg)" stroke="#fff" stroke-width="2"/>`})}
+  else keys.forEach((k,i)=>{const v=vals[i];if(v==null)return;const c=key==='rec'?recCol(v):MCOL[key]||'var(--muted)';
     s+=`<rect x="${L+i*bw+bw*.18}" y="${y(v)}" width="${bw*.64}" height="${Math.max(2,T+ih-y(v))}" rx="${Math.min(3,bw*.25)}" fill="${c}" opacity="${i===keys.length-1?1:.6}"/>`});
   if(avg!=null)s+=`<line x1="${L}" x2="${W-Rp}" y1="${y(avg)}" y2="${y(avg)}" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 4" opacity=".8"/>`;
-  const lab=keys.length<=7?keys.map((k,i)=>i):[0,7,14,21,keys.length-1];
+  const lab=keys.length<=7?keys.map((k,i)=>i):[0,.25,.5,.75,1].map(q=>Math.round(q*(keys.length-1)));
   lab.forEach(i=>{const d=fromIso(keys[i]);s+=`<text x="${L+i*bw+bw/2}" y="${H-6}" text-anchor="middle">${keys.length<=7?d.toLocaleDateString('de-DE',{weekday:'short'}):d.getDate()+'.'+(d.getMonth()+1)+'.'}</text>`});
   return s+'</svg>'}
-function vMetric(key,k){const m=MET[key]||MET.hrv,keys=Array.from({length:mRange},(_,i)=>shift(k,i-mRange+1)),vals=keys.map(x=>data.daily[x]?m.f(x):null),valid=vals.filter(v=>v!=null),v=m.f(k),a=mean(hist(m.f,k)),ra=mean(valid);
+const BODY=['weight','fat'];
+function lastBody(k,f){const ds=days().filter(x=>x<=k&&f(x)!=null);return ds.length?ds[ds.length-1]:null}
+function vMetric(key,k){const body=BODY.includes(key),m=MET[key]||MET.hrv;let range=body?mRange:(mRange||30);
+  if(range===0){const ds=days().filter(x=>x<=k&&m.f(x)!=null);const first=ds[0]||k;range=Math.max(7,Math.round((fromIso(k)-fromIso(first))/864e5)+1)}
+  const keys=Array.from({length:range},(_,i)=>shift(k,i-range+1)),vals=keys.map(x=>data.daily[x]?m.f(x):null),valid=vals.filter(v=>v!=null),lk=body?lastBody(k,m.f):k,v=lk?m.f(lk):null,a=mean(hist(m.f,k)),ra=mean(valid);
   return `<div class="mhead"><span class="mic">${I[m.ic]}</span><h2>${m.n}</h2></div>
   <div class="mbig"><b class="num">${v==null?'–':m.v(v)}</b><span>${m.u||''}</span></div>
-  <p class="jsub">Schnitt der letzten 30 Tage: <b class="num" style="color:var(--fg)">${a==null?'–':m.v(a)}</b> ${m.u||''}</p>
-  <div class="seg"><button data-act="mrange" data-r="7" aria-pressed="${mRange===7}">7 TAGE</button><button data-act="mrange" data-r="30" aria-pressed="${mRange===30}">30 TAGE</button></div>
+  <p class="jsub">${body&&lk&&lk!==k?'Letzte Messung: '+fromIso(lk).toLocaleDateString('de-DE',{day:'numeric',month:'long'})+' · ':''}Schnitt der letzten 30 Tage: <b class="num" style="color:var(--fg)">${a==null?'–':m.v(a)}</b> ${m.u||''}</p>
+  <div class="seg"><button data-act="mrange" data-r="7" aria-pressed="${mRange===7}">7 TAGE</button><button data-act="mrange" data-r="30" aria-pressed="${mRange===30}">30 TAGE</button>${body?`<button data-act="mrange" data-r="0" aria-pressed="${mRange===0}">ALLE</button>`:''}</div>
   ${barChart(keys,vals,m,key,ra)}
   <div class="tstats"><div><span class="l">MINIMUM</span><b class="num">${valid.length?m.v(Math.min(...valid)):'–'}</b></div><div><span class="l">DURCHSCHNITT</span><b class="num">${ra==null?'–':m.v(ra)}</b></div><div><span class="l">MAXIMUM</span><b class="num">${valid.length?m.v(Math.max(...valid)):'–'}</b></div></div>
   <p class="tnote">Gestrichelte Linie: Durchschnitt im Zeitraum</p>
+  ${body?bodyBlock(k):''}
   ${insight('WAS BEDEUTET DAS?',MINFO[key]||'')}`}
+function bodyBlock(k){const lk=lastBody(k,x=>D(x).weight),x=lk?D(lk):{},all=days().filter(d=>D(d).weight!=null).reverse();
+  const t=(l,v,u)=>`<div class="tile"><span class="l">${l}</span><b class="num">${v==null?'–':fmt(v,1)}<small>${u}</small></b></div>`;
+  return `<div class="sec"><span>Körperzusammensetzung</span><span>${lk?fromIso(lk).toLocaleDateString('de-DE',{day:'numeric',month:'short'}):''}</span></div>
+  <div class="tiles" style="margin-top:0">${t('Gewicht',x.weight,'kg')}${t('Körperfett',x.fat,'%')}${t('Muskelmasse',x.muscle,'kg')}${t('Körperwasser',x.water,'%')}${x.bone!=null?t('Knochenmasse',x.bone,'kg'):''}</div>
+  <label class="btn w" for="file" style="margin-top:16px">WITHINGS IMPORTIEREN</label>
+  <div class="msg" id="msg" role="status"></div>
+  <div class="sec"><span>Alle Messungen</span><span>${all.length}</span></div>
+  ${all.length?`<div class="card" style="margin-top:0;padding:6px 16px">${all.map(d=>`<div class="wrow"><span>${fromIso(d).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short',year:'2-digit'})}</span><b class="num">${fmt(D(d).weight,1)} kg</b><span class="num">${D(d).fat!=null?fmt(D(d).fat,1)+' %':''}</span></div>`).join('')}</div>`:'<p class="hint">Noch keine Messungen. Importiere deine Withings-Datei (weight.csv).</p>'}`}
 function vOutlook(k){const x=D(k),t=target(x.rec),tr=x.rec==null?null:x.rec>=67?[14,18]:x.rec>=34?[10,14]:[0,10],ni=nightInfo(k),nn=need(shift(k,1));
   const wake=ni?new Date(ni.e):D(k).up?new Date(D(k).up):(()=>{const d=new Date();d.setHours(7,0,0,0);return d})();
   const bed=new Date(wake.getTime()-nn*6e4-20*6e4),hv=x.hrv,ha=mean(hist(k2=>D(k2).hrv,k)),diff=hv!=null&&ha?Math.round((hv-ha)/ha*100):null;
@@ -820,6 +840,7 @@ const avtx=c=>{const h=c.replace('#',''),r=parseInt(h.slice(0,2),16),g=parseInt(
 function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</span></div>
   <div class="avrow"><span class="avatar big" style="background:${avc()};color:${avtx(avc())}">${esc((store.name||'B')[0].toUpperCase())}</span>
     <div class="swatches" role="radiogroup" aria-label="Farbe des Profilbilds">${AVC.map(([c,n])=>`<button class="sw-c" role="radio" aria-checked="${avc()===c}" aria-label="${n}" data-act="avcol" data-c="${c}" style="background:${c}"></button>`).join('')}</div></div>
+  <label class="btn g" for="file" style="margin-top:10px">WITHINGS IMPORTIEREN</label>
   <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
   <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>
   <button class="tog" data-act="togglegarmin" aria-pressed="${!store.hideGarmin}" style="width:100%;margin-top:24px"><span>Garmin-Bereich anzeigen</span><span class="sw"></span></button>
