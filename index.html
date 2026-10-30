@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793360290";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793360392";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -282,6 +282,11 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .savebox b{color:var(--yellow);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
 .dord{display:flex;align-items:center;gap:8px}
 .dord .tog{flex:1;min-width:0}
+.dlist{display:flex;flex-direction:column;gap:8px}
+.grip{width:40px;height:52px;display:grid;place-items:center;color:var(--muted);touch-action:none;cursor:grab;flex:none}
+.grip svg{width:22px;height:22px}
+.dord.dragging{opacity:.9;transform:scale(1.02);filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.dord.dragging .tog{background:var(--card-2)}
 .arr{display:flex;flex-direction:column;gap:4px}
 .arr button{width:36px;height:24px;border-radius:6px;background:var(--card);display:grid;place-items:center;color:var(--fg)}
 .arr button svg{width:12px;height:12px}
@@ -663,8 +668,8 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.k
     ${allQ().filter(([id])=>!(id in (j||{}))).slice(0,3).map(([id,t])=>qRow(id,t,j||{})).join('')}
     <button class="linkb" data-go="logbuch">ALLE FRAGEN BEANTWORTEN ${I.chev}</button></div>`}
   <div class="h-row"><h2 class="h1">Mein Dashboard</h2><button class="mini" data-act="dash-edit">${editDash?'FERTIG':'PERSONALISIEREN'} ${I.pencil}</button></div>
-  ${editDash?`<div class="dash-edit"><p class="hint" style="margin:0 0 4px">Reihenfolge mit den Pfeilen ändern, mit dem Schalter ein- und ausblenden.</p>${(()=>{const all=['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress','weight','fat'],on=store.dash.filter(m=>all.includes(m)),off=all.filter(m=>!on.includes(m));
-    return on.map((m,i)=>`<div class="dord"><div class="arr"><button data-act="dash-up" data-k="${m}" aria-label="Nach oben" ${i===0?'disabled':''}>${I.chev}</button><button data-act="dash-down" data-k="${m}" aria-label="Nach unten" ${i===on.length-1?'disabled':''}>${I.chev}</button></div><button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="true"><span>${MET[m].n}</span><span class="sw"></span></button></div>`).join('')
+  ${editDash?`<div class="dash-edit"><p class="hint" style="margin:0 0 4px">Am Griff ≡ festhalten und ziehen, um die Reihenfolge zu ändern. Mit dem Schalter ein- und ausblenden.</p>${(()=>{const all=['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress','weight','fat'],on=store.dash.filter(m=>all.includes(m)),off=all.filter(m=>!on.includes(m));
+    return '<div class="dlist">'+on.map(m=>`<div class="dord" data-k="${m}"><span class="grip" data-grip aria-label="Ziehen zum Sortieren">${I.menu}</span><button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="true"><span>${MET[m].n}</span><span class="sw"></span></button></div>`).join('')+'</div>'
       +(off.length?`<p class="hint" style="margin:10px 0 4px">Ausgeblendet</p>`:'')+off.map(m=>`<button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="false"><span>${MET[m].n}</span><span class="sw"></span></button>`).join('')})()}</div>`
   :data.dash.map(m=>mrow(m,k)).join('')}`}
 
@@ -1183,6 +1188,15 @@ document.addEventListener('change',async e=>{
 });
 document.addEventListener('input',e=>{if(e.target.id==='wipeword'){const ok=e.target.value.trim().toUpperCase()==='LÖSCHEN',b=$('#wipe3');if(b){b.disabled=!ok;b.style.opacity=ok?1:.4}}});
 document.addEventListener('toggle',e=>{const g=e.target&&e.target.dataset&&e.target.dataset.g;if(g){if(e.target.open)moreOpen.add(g);else moreOpen.delete(g)}},true);
+document.addEventListener('pointerdown',e=>{const g=e.target.closest('[data-grip]');if(!g)return;e.preventDefault();
+  const row=g.closest('.dord'),list=row.parentElement,startY=e.clientY;let lastY=startY;row.classList.add('dragging');
+  const move=ev=>{ev.preventDefault();lastY=ev.clientY;const sibs=[...list.querySelectorAll('.dord:not(.dragging)')];let before=null;
+    for(const sb of sibs){const r=sb.getBoundingClientRect();if(lastY<r.top+r.height/2){before=sb;break}}
+    if(before!==row.nextSibling)list.insertBefore(row,before);
+    const vh=window.innerHeight;if(lastY>vh-120)window.scrollBy(0,12);else if(lastY<140)window.scrollBy(0,-12)};
+  const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);row.classList.remove('dragging');
+    const order=[...list.querySelectorAll('.dord')].map(x=>x.dataset.k);store.dash=order.concat(store.dash.filter(k=>!order.includes(k)));save();if(data!==store)data.dash=store.dash;render()};
+  window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up)});
 addEventListener('keydown',e=>{if(e.key==='Escape')$('#sheet').hidden=true;if(e.key==='Enter'&&e.target.id==='newq'){e.preventDefault();const c=$('#newcat');addQ(e.target.value,c&&c.value)}});
 function fromHash(h){if(h.startsWith('m-')&&MET[h.slice(2)]){metricKey=h.slice(2);return'metric'}return DETAIL[h]||MAIN.includes(h)||SUB.includes(h)?h:null}
 addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v&&(v!==view||v==='metric')){if(!SUB.includes(view))prevView=view;view=v;render()}});
