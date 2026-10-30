@@ -203,7 +203,17 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 
 /* Mehr */
 .field{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--card);border-radius:14px;padding:12px 16px;margin-top:10px}
-.field label{font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.field label{font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label small{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
+.field select{width:130px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--fg);padding:10px;font:inherit}
+.ehead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.wl{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:10px 12px;margin-top:10px}
+.wl span{flex:1;min-width:0}
+.wl b{font-weight:700}
+.prompt{display:flex;align-items:center;gap:14px;width:100%;margin-top:14px;padding:16px;border-radius:16px;border:1px dashed #56616a}
+.prompt svg{width:26px;height:26px;flex:none;color:var(--mint)}
+.prompt b{display:block;font-size:13px;font-weight:800;letter-spacing:.1em}
+.prompt span{color:var(--muted);font-size:14px}
 .field input{width:130px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--fg);padding:10px;font:inherit;text-align:center}
 .steps-list{margin:0;padding:16px 16px 16px 36px;background:var(--card);border-radius:14px;color:var(--muted);line-height:1.55}
 .steps-list b{color:var(--fg);font-weight:600}
@@ -332,13 +342,14 @@ const I={
   info:sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5" stroke-width="2.4"/>'),
   pulse:sv('<path d="M3 12h4l2-4 4 8 2-4h6"/>'),
   bed:sv('<path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.6"/>'),
+  scale:sv('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.5 9.5a5 5 0 0 1 7 0L13 12"/>'),
   sauna:sv('<path d="M5 20v-6h8v6M9 14V9.5a2 2 0 1 0-0.1 0M15 8c1-1 1-2 0-3M18 8c1-1 1-2 0-3"/>')
 };
 
 /* ---------- Speicher ---------- */
-const DEF=()=>({daily:{},sleep:{},workouts:[],need:8,real:false,name:'Bene',journal:{},customQ:[],dash:['hrv','rhr','perf','steps','kcal','resto']});
+const DEF=()=>({daily:{},sleep:{},workouts:[],need:8,real:false,name:'Bene',journal:{},customQ:[],dash:['hrv','rhr','perf','steps','kcal','resto','weight'],dashW:1});
 let store=DEF();
-function load(){try{const raw=localStorage.getItem(KEY)||localStorage.getItem('wbm.v1');const s=raw&&JSON.parse(raw);if(s&&s.daily)store=Object.assign(DEF(),s)}catch(e){}}
+function load(){try{const raw=localStorage.getItem(KEY)||localStorage.getItem('wbm.v1');const s=raw&&JSON.parse(raw);if(s&&s.daily){store=Object.assign(DEF(),s);if(!store.dashW){if(!store.dash.includes('weight'))store.dash.push('weight');store.dashW=1}}}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 
 /* ---------- CSV-Import (OpenStrap-Export) ---------- */
@@ -362,11 +373,17 @@ function stageOf(v){const s=String(v).toLowerCase();
   if(s.includes('rem'))return'rem';return'light'}
 function importRows(rows){
   if(!rows.length)return null;const h=Object.keys(rows[0]);
+  const wk=h.find(x=>/^(weight|gewicht)/.test(x));
+  if(wk&&!h.includes('readiness')){const fk=h.find(x=>/^(fat mass|fettmasse)/.test(x)),dk=h.find(x=>/^(date|datum)/.test(x))||h[0],best={};
+    rows.forEach(r=>{const raw=r[dk];let d=/^\d{4}-\d{2}-\d{2}/.test(raw)?raw.slice(0,10):null,t=Date.parse(String(raw).replace(' ','T'));if(!d&&!isNaN(t))d=iso(new Date(t));
+      const w=n(String(r[wk]).replace(',','.'));if(!d||w==null)return;if(!best[d]||t>best[d].t){const fm=fk?n(String(r[fk]).replace(',','.')):null;best[d]={t,w,f:fm!=null&&w?+(fm/w*100).toFixed(1):null}}});
+    Object.entries(best).forEach(([d,v])=>{store.daily[d]=Object.assign({},store.daily[d],{weight:+v.w.toFixed(1)},v.f!=null?{fat:v.f}:{})});
+    return Object.keys(best).length?'Gewicht':null}
   if(h.includes('readiness')||h.includes('resting_hr')){
     rows.forEach(r=>{if(!r.date)return;let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
-      store.daily[r.date]={rec:rec==null?null:Math.round(rec),rhr:n(r.resting_hr),hrv:n(r.hrv),resp:n(r.resp_rate),strain:n(r.strain),
+      store.daily[r.date]=Object.assign({},store.daily[r.date],{rec:rec==null?null:Math.round(rec),rhr:n(r.resting_hr),hrv:n(r.hrv),resp:n(r.resp_rate),strain:n(r.strain),
         kcal:n(r.total_calories),akcal:n(r.active_calories),sleep:n(r.sleep_min),deep:n(r.deep_min),rem:n(r.rem_min),
-        light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress)}});
+        light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress),src:'openstrap'})});
     return'Tageswerte'}
   if(h.includes('stage')){
     const by={};rows.forEach(r=>{const a=ts(r.start_ts),b=ts(r.end_ts);if(!r.date||a==null||b==null)return;(by[r.date]=by[r.date]||[]).push([a,b,stageOf(r.stage)])});
@@ -399,7 +416,7 @@ function demo(){
     const kind=R(),type=kind<.4?'running':kind<.65?'weightlifting':kind<.8?'walking':null;
     const strain=+(type?(8+R()*9):(3+R()*5)).toFixed(1);
     st.daily[k]={rec,rhr,hrv,resp:+(13.8+R()*1.8).toFixed(1),strain,kcal:Math.round(1900+strain*62),akcal:Math.round(strain*62),
-      sleep,deep,rem,light,eff:Math.round(86+R()*10),steps:Math.round(6500+R()*8000),stress:+(0.2+R()*1.8).toFixed(1)};
+      sleep,deep,rem,light,eff:Math.round(86+R()*10),steps:Math.round(6500+R()*8000),stress:+(0.2+R()*1.8).toFixed(1),weight:+(53+(R()-.5)*1.2).toFixed(1)};
     const bed=new Date(d);bed.setDate(bed.getDate()-1);bed.setHours(23,Math.round(R()*70),0,0);
     st.sleep[k]=night(bed.getTime(),{light,deep,rem,wake},R);
     if(type){const s=new Date(d);s.setHours(16+Math.floor(R()*3),Math.round(R()*59),0,0);const dur=Math.round(35+R()*45);
@@ -420,7 +437,7 @@ const mean=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:null;
 const sdev=a=>{const m=mean(a);return a.length>2?Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/(a.length-1)):null};
 const recCol=v=>v==null?'var(--dim)':v>=67?'var(--green)':v>=34?'var(--yellow)':'var(--red)';
 
-let data,cur,view='home',stageSel='deep',trendTab='schlaf',trendEnd=null,editDash=false,metricKey='hrv',mRange=30,prevView='home',jEdit=false;
+let entryDate=null,data,cur,view='home',stageSel='deep',trendTab='schlaf',trendEnd=null,editDash=false,metricKey='hrv',mRange=30,prevView='home',jEdit=false;
 const days=()=>Object.keys(data.daily).sort();
 const D=k=>data.daily[k]||{};
 const hist=(f,k,len=30)=>days().filter(x=>x<k).slice(-len).map(f).filter(v=>v!=null);
@@ -439,14 +456,16 @@ const MET={
   perf:{n:'Schlafleistung',ic:'moon',f:perf,v:pct,good:1},
   sleep:{n:'Geschlafene Stunden',ic:'moon',f:k=>D(k).sleep,v:hm,good:1},
   resto:{n:'Erholsamer Schlaf',ic:'restore',f:resto,v:hm,good:1},
-  inbed:{n:'Zeit im Bett',ic:'bed',f:k=>nightInfo(k)?.bed??null,v:hm,good:0},
+  inbed:{n:'Zeit im Bett',ic:'bed',f:k=>nightInfo(k)?.bed??(D(k).bed&&D(k).up?(D(k).up-D(k).bed)/6e4:null),v:hm,good:0},
   eff:{n:'Schlafeffizienz',ic:'moon',f:k=>D(k).eff,v:pct,good:1},
   rec:{n:'Erholung',ic:'pulse',f:k=>D(k).rec,v:pct,good:1},
   strain:{n:'Belastung',ic:'bolt',f:k=>D(k).strain,v:v=>fmt(v,1),good:0},
   steps:{n:'Schritte',ic:'shoe',f:k=>D(k).steps,v:v=>fmt(v),good:1},
   kcal:{n:'Kalorien',ic:'flame',f:k=>D(k).kcal,v:v=>fmt(v),good:0},
   akcal:{n:'Aktive Kalorien',ic:'flame',f:k=>D(k).akcal,v:v=>fmt(v),good:0},
-  stress:{n:'Stress',ic:'pulse',f:stressOf,v:v=>fmt(v,1),good:-1}
+  stress:{n:'Stress',ic:'pulse',f:stressOf,v:v=>fmt(v,1),good:-1},
+  weight:{n:'Gewicht',ic:'scale',f:k=>D(k).weight,v:v=>fmt(v,1),good:0,u:'kg'},
+  fat:{n:'Körperfett',ic:'scale',f:k=>D(k).fat,v:v=>fmt(v,1),good:0,u:'%'}
 };
 function mrow(key,k){
   const m=MET[key],v=m.f(k),a=mean(hist(m.f,k));let tri='<span></span>';
@@ -477,7 +496,7 @@ const SPORT={running:['LAUFEN','run'],run:['LAUFEN','run'],walking:['GEHEN','wal
   weightlifting:['KRAFTTRAINING','lift'],strength:['KRAFTTRAINING','lift'],gym:['KRAFTTRAINING','lift'],swimming:['SCHWIMMEN','swim'],yoga:['YOGA','yoga'],sauna:['SAUNA','sauna'],hiit:['HIIT','bolt']};
 function sleepRow(k){const ni=nightInfo(k),x=D(k);if(!ni&&x.sleep==null)return'';
   return `<div class="act"><div class="badge" style="background:var(--sleep)">${I.moon}<span>${hm(x.sleep??(ni.bed-ni.by.wake))}</span></div><div class="act-n">SCHLAF</div>
-  <div class="act-t">${ni?`<span>${tm(ni.s)}</span><span>${tm(ni.e)}</span>`:''}</div><i class="act-b" style="background:var(--sleep)"></i></div>`}
+  <div class="act-t">${ni?`<span>${tm(ni.s)}</span><span>${tm(ni.e)}</span>`:x.bed&&x.up?`<span>${tm(x.bed)}</span><span>${tm(x.up)}</span>`:''}</div><i class="act-b" style="background:var(--sleep)"></i></div>`}
 function workRows(k){return data.workouts.filter(w=>w.date===k).sort((a,b)=>a.start-b.start).map(w=>{
   const sp=SPORT[String(w.type).toLowerCase()]||[String(w.type||'Aktivität').toUpperCase(),'bolt'];
   return `<div class="act"><div class="badge" style="background:var(--strain)">${I[sp[1]]}<span>${fmt(w.strain,1)}</span></div><div class="act-n">${sp[0]}</div>
@@ -507,6 +526,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[k],jn=j?Object.keys(j)
     <button class="dial" data-go="belastung" aria-label="Belastung ${fmt(x.strain,1)}">${ring(x.strain==null?0:x.strain/21,'var(--strain)',{inner:rtext(110,fmt(x.strain,1),'',30)})}<span class="dlab">BELASTUNG ${I.chev}</span></button>
   </div>
   ${monitors(k)}
+  ${store.daily[iso(new Date())]?'':`<button class="prompt" data-act="entry" data-d="${iso(new Date())}">${I.plus}<span><b>WERTE FÜR HEUTE EINTRAGEN</b><span>Schlaf, HRV und Co. von deiner Garmin übernehmen</span></span></button>`}
   <div class="h-row"><h2 class="h1">Mein Tag</h2><button class="plus" data-go="logbuch" aria-label="Logbuch ausfüllen">${I.plus}</button></div>
   <button class="outlook" data-go="ausblick">${I.sun}<span>Täglicher Ausblick</span><span class="chev">${I.chev}</span></button>
   ${acts(k)}
@@ -515,7 +535,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[k],jn=j?Object.keys(j)
     ${allQ().filter(([id])=>!(id in (j||{}))).slice(0,3).map(([id,t])=>qRow(id,t,j||{})).join('')}
     <button class="linkb" data-go="logbuch">${jn>=allQ().length?'LOGBUCH ANSEHEN':'ALLE FRAGEN BEANTWORTEN'} ${I.chev}</button></div>
   <div class="h-row"><h2 class="h1">Mein Dashboard</h2><button class="mini" data-act="dash-edit">${editDash?'FERTIG':'PERSONALISIEREN'} ${I.pencil}</button></div>
-  ${editDash?`<div class="dash-edit">${['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress'].map(m=>`<button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="${data.dash.includes(m)}"><span>${MET[m].n}</span><span class="sw"></span></button>`).join('')}</div>`
+  ${editDash?`<div class="dash-edit">${['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress','weight','fat'].map(m=>`<button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="${data.dash.includes(m)}"><span>${MET[m].n}</span><span class="sw"></span></button>`).join('')}</div>`
   :data.dash.map(m=>mrow(m,k)).join('')}`}
 
 function vOverview(k){const x=D(k),p=perf(k),s=160;
@@ -542,6 +562,11 @@ function vSleep(k){const x=D(k),p=perf(k),ni=nightInfo(k),nd=need(k);
     night=`<div class="card"><div class="night-h"><span>LETZTE NACHT</span><span>ZEIT IM BETT<b>${hm(ni.bed)}</b></span></div>
     ${ST.map(([s,l,c])=>`<button class="stg" data-act="stage" data-st="${s}" aria-pressed="${stageSel===s}"><span class="radio"></span><span class="l">${l}</span><span class="p" style="${stageSel===s?`color:${c}`:''}">${Math.round(ni.by[s]/tot*100)}%</span><span class="d num">${hm(ni.by[s])}</span>
       <span class="trk">${ni.list.filter(e=>e[2]===s).map(([a,b])=>`<i style="left:${(a-ni.s)/span*100}%;width:${(b-a)/span*100}%;background:${stageSel===s?c:'#8e99a2'}"></i>`).join('')}</span></button>`).join('')}
+    <div class="resto"><span><i class="sq"></i>ERHOLSAMER SCHLAF</span><span class="v"><b>${hm(rs)}</b><small>${ra==null?'':hm(ra)}</small></span></div></div>`}
+  else if(x.deep!=null||x.rem!=null||x.light!=null){const by={wake:x.wake||0,light:x.light||0,deep:x.deep||0,rem:x.rem||0},tot=Object.values(by).reduce((a,b)=>a+b,0)||1,rs=resto(k),ra=mean(hist(resto,k)),ib=MET.inbed.f(k);
+    night=`<div class="card"><div class="night-h"><span>LETZTE NACHT</span><span>ZEIT IM BETT<b>${hm(ib)}</b></span></div>
+    ${ST.map(([s,l,c])=>`<button class="stg" data-act="stage" data-st="${s}" aria-pressed="${stageSel===s}"><span class="radio"></span><span class="l">${l}</span><span class="p" style="${stageSel===s?`color:${c}`:''}">${Math.round(by[s]/tot*100)}%</span><span class="d num">${hm(by[s])}</span>
+      <span class="trk"><i style="left:0;width:${by[s]/tot*100}%;background:${stageSel===s?c:'#8e99a2'}"></i></span></button>`).join('')}
     <div class="resto"><span><i class="sq"></i>ERHOLSAMER SCHLAF</span><span class="v"><b>${hm(rs)}</b><small>${ra==null?'':hm(ra)}</small></span></div></div>`}
   return `<div class="sp-title">SCHLAF­LEISTUNG</div>
   <div class="sp"><div class="sp-big num">${pct(p)}</div><i class="br l"></i><i class="br r"></i>
@@ -613,7 +638,7 @@ function vJournal(k){const j=(data.journal&&data.journal[k])||{},cq=store.custom
   <div class="chips">${SUGG.filter(t=>!have.has(t)).slice(0,6).map(t=>`<button class="chipq" data-act="sugg" data-t="${esc(t)}">+ ${t}</button>`).join('')}</div>
   <button class="cta" data-act="jsave">LOGBUCH SPEICHERN</button>`}
 
-const MCOL={hrv:'#c9d2d8',rhr:'#c9d2d8',resp:'#c9d2d8',stress:'#c9d2d8',perf:'var(--sleep)',sleep:'var(--sleep)',resto:'var(--sleep)',inbed:'var(--sleep)',eff:'var(--sleep)',strain:'var(--strain)',steps:'var(--strain)',kcal:'var(--strain)',akcal:'var(--strain)'};
+const MCOL={weight:'#c9d2d8',fat:'#c9d2d8',hrv:'#c9d2d8',rhr:'#c9d2d8',resp:'#c9d2d8',stress:'#c9d2d8',perf:'var(--sleep)',sleep:'var(--sleep)',resto:'var(--sleep)',inbed:'var(--sleep)',eff:'var(--sleep)',strain:'var(--strain)',steps:'var(--strain)',kcal:'var(--strain)',akcal:'var(--strain)'};
 const MINFO={hrv:'Die Herzfrequenzvariabilität misst, wie stark der Abstand zwischen deinen Herzschlägen im Schlaf schwankt. Ein höherer Wert als sonst zeigt meist, dass dein Nervensystem gut erholt ist.',
   rhr:'Dein Ruhepuls im Schlaf. Liegt er unter deinem Schnitt, spricht das für gute Erholung. Ein erhöhter Wert kann von Stress, Alkohol, spätem Essen oder einer beginnenden Erkältung kommen.',
   resp:'Atemzüge pro Minute im Schlaf. Der Wert bleibt meist sehr stabil. Steigt er plötzlich an, kann das ein frühes Zeichen für eine Erkältung sein.',
@@ -625,12 +650,14 @@ const MINFO={hrv:'Die Herzfrequenzvariabilität misst, wie stark der Abstand zwi
   rec:'Deine Erholung aus HRV, Ruhepuls, Atemfrequenz und Schlaf. Grün ab 67 %, gelb ab 34 %, darunter rot.',
   strain:'Deine Tagesbelastung auf einer Skala von 0 bis 21. Sie steigt mit der Zeit, die dein Puls erhöht ist.',
   steps:'Deine Schritte am Tag, gezählt vom Band.',kcal:'Dein gesamter Kalorienverbrauch am Tag, inklusive Grundumsatz.',akcal:'Die Kalorien, die du zusätzlich durch Bewegung verbraucht hast.',
-  stress:'Wie stark dein Körper über den Tag aktiviert war, von 0 bis 3. Unter 1 ist ruhig, ab 2 hoch.'};
+  stress:'Wie stark dein Körper über den Tag aktiviert war, von 0 bis 3. Unter 1 ist ruhig, ab 2 hoch.',
+  weight:'Dein Gewicht, aus Withings importiert oder selbst eingetragen. Schwankungen von bis zu einem Kilo am Tag sind normal, zum Beispiel durch Wasser und Essen.',
+  fat:'Dein Körperfettanteil laut Waage. Achte eher auf den Verlauf über Wochen als auf einzelne Tage.'};
 const strip=h=>String(h).replace(/<[^>]+>/g,'');
 function barChart(keys,vals,m,key,avg){
   const W=340,H=200,L=40,B=26,T=12,Rp=8,iw=W-L-Rp,ih=H-T-B,valid=vals.filter(v=>v!=null);
   if(!valid.length)return '<p class="empty">Für diesen Zeitraum gibt es keine Werte.</p>';
-  let lo=['hrv','rhr','resp'].includes(key)?Math.floor(Math.min(...valid)*.8):0,hi=Math.max(...valid)*1.12;if(['perf','eff','rec'].includes(key))hi=100;if(key==='strain')hi=21;if(hi<=lo)hi=lo+1;
+  let lo=['hrv','rhr','resp'].includes(key)?Math.floor(Math.min(...valid)*.8):0,hi=Math.max(...valid)*1.12;if(['weight','fat'].includes(key)){lo=Math.floor(Math.min(...valid)-2);hi=Math.ceil(Math.max(...valid)+2)}if(['perf','eff','rec'].includes(key))hi=100;if(key==='strain')hi=21;if(hi<=lo)hi=lo+1;
   const y=v=>T+ih-(clamp(v,lo,hi)-lo)/(hi-lo)*ih,bw=iw/keys.length;
   let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verlauf ${m.n}">`;
   [lo,(lo+hi)/2,hi].forEach(t=>{s+=`<line x1="${L}" x2="${W-Rp}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end">${strip(m.v(t))}</text>`});
@@ -650,7 +677,7 @@ function vMetric(key,k){const m=MET[key]||MET.hrv,keys=Array.from({length:mRange
   <p class="tnote">Gestrichelte Linie: Durchschnitt im Zeitraum</p>
   ${insight('WAS BEDEUTET DAS?',MINFO[key]||'')}`}
 function vOutlook(k){const x=D(k),t=target(x.rec),tr=x.rec==null?null:x.rec>=67?[14,18]:x.rec>=34?[10,14]:[0,10],ni=nightInfo(k),nn=need(shift(k,1));
-  const wake=ni?new Date(ni.e):(()=>{const d=new Date();d.setHours(7,0,0,0);return d})();
+  const wake=ni?new Date(ni.e):D(k).up?new Date(D(k).up):(()=>{const d=new Date();d.setHours(7,0,0,0);return d})();
   const bed=new Date(wake.getTime()-nn*6e4-20*6e4),hv=x.hrv,ha=mean(hist(k2=>D(k2).hrv,k)),diff=hv!=null&&ha?Math.round((hv-ha)/ha*100):null;
   const s=110,rc=recCol(x.rec);
   return `<h2 class="jtitle">Täglicher Ausblick</h2><p class="jsub">${fromIso(k).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</p>
@@ -665,12 +692,55 @@ function vOutlook(k){const x=D(k),t=target(x.rec),tr=x.rec==null?null:x.rec>=67?
     <p class="op">Dein Schlafbedarf für heute Nacht: <b>${hm(nn)} h</b>${D(k).strain>10?', etwas mehr als sonst wegen der heutigen Belastung':''}.</p></div>
   ${diff!=null?`<div class="card ocard"><div class="card-h"><span>GUT ZU WISSEN</span></div><p class="op" style="margin-top:0">Deine HRV liegt heute ${Math.abs(diff)} % ${diff>=0?'über':'unter'} deinem 30-Tage-Schnitt. ${diff>=5?'Ein gutes Zeichen für deine Erholung.':diff<=-5?'Achte heute auf Pausen, Wasser und eine frühe Nacht.':'Das ist im normalen Bereich.'}</p></div>`:''}
   <button class="cta" data-go="logbuch">LOGBUCH AUSFÜLLEN</button>`}
+const pHM=v=>{v=String(v??'').trim().replace(',','.');if(!v)return null;if(v.includes(':')){const[h,m]=v.split(':').map(Number);return isFinite(h)&&isFinite(m)?h*60+m:null}const x=Number(v);return isFinite(x)?(x<=16?Math.round(x*60):Math.round(x)):null};
+const toHM=m=>m==null?'':Math.floor(m/60)+':'+String(Math.round(m%60)).padStart(2,'0');
+const toT=t=>t?new Date(t).toTimeString().slice(0,5):'';
+function wStrain(dur,avg){if(!dur)return 0;const hr=avg||130,i=clamp((hr-60)/138,0,1);return dur*i*Math.exp(1.92*i)}
+const toStrain=trimp=>+Math.min(21,Math.log(trimp+1)/Math.log(1.5)).toFixed(1);
+function estStrain(k){const x=store.daily[k]||{},w=store.workouts.filter(o=>o.date===k);return toStrain(w.reduce((a,o)=>a+wStrain(o.dur,o.avg),0)+(x.steps||0)/600)}
+const EF=[['ERHOLUNG',[['rec','Erholung','%','Trainingsbereitschaft oder Body Battery am Morgen'],['hrv','HRV','ms','Übernacht-Durchschnitt'],['rhr','Ruhepuls','bpm',''],['resp','Atemfrequenz','/min','Atemzüge pro Minute im Schlaf']]],
+  ['SCHLAF',[['bed','Eingeschlafen','time',''],['up','Aufgewacht','time',''],['sleep','Schlafdauer','h:mm','z. B. 7:38'],['deep','Tiefschlaf','h:mm',''],['rem','REM','h:mm',''],['light','Leichtschlaf','h:mm',''],['wake','Wach','h:mm','']]],
+  ['TAG',[['steps','Schritte','',''],['kcal','Kalorien gesamt','kcal',''],['akcal','Aktive Kalorien','kcal',''],['stress','Stress','0–100','Garmin-Tagesdurchschnitt'],['strain','Belastung','0–21','Leer lassen: wird aus Aktivitäten geschätzt']]],
+  ['KÖRPER',[['weight','Gewicht','kg','']]]];
+const HMF=['sleep','deep','rem','light','wake'];
+function entryVal(key,x){const v=x[key];if(v==null)return'';if(HMF.includes(key))return toHM(v);if(key==='bed'||key==='up')return toT(v);if(key==='stress'&&v<=3)return Math.round(v*100/3);if(key==='strain'&&x.strainAuto)return'';return String(v).replace('.',',')}
+function vEntry(){const k=entryDate||iso(new Date()),x=store.daily[k]||{},ws=store.workouts.filter(o=>o.date===k);
+  return `<div class="ehead"><h2 class="jtitle">Tag eintragen</h2></div><p class="jsub">Werte aus Garmin Connect. Die Nacht gehört zu dem Tag, an dem du aufgewacht bist.</p>
+  <div class="field"><label for="e_date">Datum</label><input id="e_date" type="date" value="${k}" max="${iso(new Date())}"></div>
+  ${EF.map(([g,fs])=>`<div class="sec"><span>${g}</span></div>${fs.map(([id,l,u,h])=>`<div class="field"><label for="e_${id}">${l}${u&&u!=='time'?` (${u})`:''}${h?`<small>${h}</small>`:''}</label>
+    <input id="e_${id}" ${u==='time'?'type="time"':`inputmode="${HMF.includes(id)?'text':'decimal'}"`} ${HMF.includes(id)?'placeholder="h:mm"':''} value="${esc(entryVal(id,x))}" autocomplete="off"></div>`).join('')}`).join('')}
+  <div class="sec"><span>Aktivitäten</span></div>
+  ${ws.map(o=>{const sp=SPORT[String(o.type).toLowerCase()]||[String(o.type).toUpperCase(),'bolt'];return `<div class="wl"><span><b>${sp[0]}</b> · ${tm(o.start)} · ${fmt(o.dur)} min${o.avg?' · Ø '+o.avg+' bpm':''} · Belastung ${fmt(o.strain,1)}</span><button class="rm" data-act="rmw" data-s="${o.start}" aria-label="Aktivität löschen">${I.x}</button></div>`}).join('')||'<p class="hint">Noch keine Aktivität an diesem Tag.</p>'}
+  <div class="field"><label for="a_type">Art</label><select id="a_type">${[['running','Laufen'],['weightlifting','Krafttraining'],['walking','Gehen'],['cycling','Radfahren'],['swimming','Schwimmen'],['yoga','Yoga'],['hiit','HIIT'],['sauna','Sauna']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
+  <div class="field"><label for="a_start">Start</label><input id="a_start" type="time" value="17:00"></div>
+  <div class="field"><label for="a_dur">Dauer (min)</label><input id="a_dur" inputmode="numeric" placeholder="45"></div>
+  <div class="field"><label for="a_avg">Ø Puls (bpm)</label><input id="a_avg" inputmode="numeric" placeholder="150"></div>
+  <button class="btn g" data-act="addw">AKTIVITÄT HINZUFÜGEN</button>
+  <button class="cta" data-act="esave">TAG SPEICHERN</button>`}
+function readEntry(){const k=($('#e_date')&&$('#e_date').value)||entryDate||iso(new Date()),o={};let any=false;
+  EF.forEach(([,fs])=>fs.forEach(([id])=>{const el=$('#e_'+id);if(!el)return;const raw=el.value.trim();let v=null;
+    if(raw){any=true;if(HMF.includes(id))v=pHM(raw);
+      else if(id==='bed'||id==='up'){const[h,m]=raw.split(':').map(Number),d=fromIso(k);d.setHours(h,m,0,0);if(id==='bed'&&h>=12)d.setDate(d.getDate()-1);v=d.getTime()}
+      else{v=n(raw.replace(',','.'));if(id==='stress'&&v!=null)v=+(clamp(v,0,100)*3/100).toFixed(1);if(id==='rec'&&v!=null)v=Math.round(clamp(v,0,100))}}
+    o[id]=v}));
+  if(o.sleep==null&&o.bed&&o.up)o.sleep=Math.round((o.up-o.bed)/6e4-(o.wake||0));
+  return{k,o,any}}
+function saveEntry(quiet){const{k,o,any}=readEntry(),hasW=store.workouts.some(w=>w.date===k);if(!any&&!hasW&&!store.daily[k])return k;
+  const auto=o.strain==null;store.daily[k]=Object.assign({},store.daily[k],o,{src:'garmin',strainAuto:auto});
+  if(auto)store.daily[k].strain=estStrain(k);
+  if(store.daily[k].sleep!=null&&store.daily[k].eff==null&&store.daily[k].bed&&store.daily[k].up)store.daily[k].eff=Math.round(store.daily[k].sleep/((store.daily[k].up-store.daily[k].bed)/6e4)*100);
+  store.real=true;save();if(!quiet){cur=k;pickData()}return k}
 function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</span></div>
   <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
   <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>
+  <div class="sec"><span>Werte selbst eintragen</span></div>
+  <p class="about">Bis das Band da ist: Werte aus Garmin Connect übernehmen, Tag für Tag.</p>
+  <button class="btn w" data-act="entry">TAG EINTRAGEN</button>
+  <div class="sec"><span>Gewicht aus Withings</span></div>
+  <p class="about">Exportiere deine Daten in deinem Withings-Konto und wähle die Datei <b>weight.csv</b> unten aus. Gewicht und Körperfett landen dann im Dashboard.</p>
   <div class="sec"><span>Daten aus OpenStrap</span></div>
   <ol class="steps-list"><li>Band in der <b>OpenStrap-App</b> synchronisieren.</li><li>Dort den <b>CSV-Export</b> öffnen und „Daily metrics“, „Sleep stages“ und „Workouts“ exportieren.</li><li>Die Dateien hier auswählen. Vorhandene Tage werden aktualisiert, nichts wird doppelt gezählt.</li></ol>
-  <label class="btn w" for="file">CSV-DATEIEN AUSWÄHLEN</label>
+  <label class="btn w" for="file">CSV-DATEIEN AUSWÄHLEN (OPENSTRAP ODER WITHINGS)</label>
   <div class="msg" id="msg" role="status"></div>
   <button class="btn g" data-act="demo">${store.real?'BEISPIELDATEN ANSEHEN':'BEISPIELDATEN WERDEN ANGEZEIGT'}</button>
   ${store.real?'':(Object.keys(store.daily).length?'<button class="btn g" data-act="mine">MEINE DATEN ANZEIGEN</button>':'')}
@@ -696,7 +766,7 @@ function sheetStress(k){const v=stressOf(k),lv=stressLvl(v);const a=Math.PI*(1-c
     <text x="30" y="166" text-anchor="middle" fill="#a2acb3" font-family="Barlow,sans-serif" font-size="13">0,0</text><text x="250" y="166" text-anchor="middle" fill="#a2acb3" font-family="Barlow,sans-serif" font-size="13">3,0</text></svg></div>
     ${insight(lv?lv[0]+'ER STRESS':'KEIN WERT',v==null?'Für diesen Tag liegt kein Stresswert vor.':v<1?'Dein Körper war heute ruhig. Ruhepuls und HRV lagen im gewohnten Rahmen.':v<2?'Dein Körper war heute mäßig aktiviert. Das ist an Trainings- und Arbeitstagen normal.':'Dein Körper war heute stark aktiviert. Plane bewusst Pausen ein.')}`)}
 function sheetOutlook(k){const x=D(k),t=target(x.rec),ni=nightInfo(k),nn=need(shift(k,1));
-  const wake=ni?new Date(ni.e):(()=>{const d=new Date();d.setHours(7,0,0,0);return d})();
+  const wake=ni?new Date(ni.e):D(k).up?new Date(D(k).up):(()=>{const d=new Date();d.setHours(7,0,0,0);return d})();
   const bed=new Date(wake.getTime()-nn*6e4-20*6e4);
   openSheet('TÄGLICHER AUSBLICK',`<div class="otext">
     <p>Deine Erholung liegt heute bei <b>${x.rec==null?'–':x.rec+' %'}</b>. ${recInsight(x.rec,k)[1]}</p>
@@ -705,12 +775,12 @@ function sheetOutlook(k){const x=D(k),t=target(x.rec),ni=nightInfo(k),nn=need(sh
 
 /* ---------- Kopf, Leiste, Steuerung ---------- */
 const DETAIL={ueberblick:'ÜBERBLICK',schlaf:'SCHLAF',erholung:'ERHOLUNG',belastung:'BELASTUNG'};
-const SUB=['logbuch','ausblick','metric'];const MAIN=['home','trends','mehr'];
+const SUB=['logbuch','ausblick','metric','eintragen'];const MAIN=['home','trends','mehr'];
 const TT={belastung:'BELASTUNG',erholung:'ERHOLUNG',schlaf:'SCHLAF'};
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])}
 function dayLabel(k){const t=iso(new Date());return k===t?'HEUTE':k===shift(t,-1)?'GESTERN':fromIso(k).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()}
 function head(){const ds=days(),i=ds.indexOf(cur);
-  const strap=`<span class="strap" title="${store.real?'Eigene Daten':'Beispieldaten'}">${store.real?'':'DEMO '}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></span>`;
+  const strap=`<span class="strap" title="${store.real?'Eigene Daten':'Beispieldaten'}">${!store.real?'DEMO ':D(cur).src==='garmin'?'GARMIN ':''}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></span>`;
   const av=SUB.includes(view)?`<button class="avatar" style="background:rgba(255,255,255,.08);color:#fff" data-act="back" aria-label="Zurück"><span style="width:18px;height:18px;display:grid">${I.l}</span></button>`:`<button class="avatar" data-go="mehr" aria-label="Profil">${esc((data.name||'B')[0].toUpperCase())}</button>`;
   let mid;
   if(view==='mehr')mid='<span class="htitle">MEHR</span>';
@@ -726,7 +796,7 @@ function navHtml(){const it=[['home','Startseite','home'],['ueberblick','Überbl
   return it.map(([v,l,ic])=>`<button data-go="${v}" ${act===v?'aria-current="page"':''}>${I[ic]}<span>${l}</span></button>`).join('')}
 function render(){
   $('#head').innerHTML=head();$('#nav').innerHTML=navHtml();
-  const V={home:()=>vHome(cur),ueberblick:()=>vOverview(cur),schlaf:()=>vSleep(cur),erholung:()=>vRec(cur),belastung:()=>vStrain(cur),trends:vTrends,logbuch:()=>vJournal(cur),mehr:vMore,ausblick:()=>vOutlook(cur),metric:()=>vMetric(metricKey,cur)};
+  const V={home:()=>vHome(cur),ueberblick:()=>vOverview(cur),schlaf:()=>vSleep(cur),erholung:()=>vRec(cur),belastung:()=>vStrain(cur),trends:vTrends,logbuch:()=>vJournal(cur),mehr:vMore,ausblick:()=>vOutlook(cur),metric:()=>vMetric(metricKey,cur),eintragen:vEntry};
   $('#view').innerHTML=(V[view]||V.home)();
 }
 function pickData(){data=store.real&&Object.keys(store.daily).length?store:demo();const ds=days();if(!ds.includes(cur))cur=ds[ds.length-1];if(trendEnd&&!ds.includes(trendEnd))trendEnd=null}
@@ -749,6 +819,14 @@ function act(a,el){
   else if(a==='sugg')addQ(el.dataset.t);
   else if(a==='rmq'){store.customQ=(store.customQ||[]).filter(c=>c.id!==el.dataset.q);save();if(data!==store)data.customQ=store.customQ;if(!store.customQ.length)jEdit=false;render()}
   else if(a==='jedit'){jEdit=!jEdit;render()}
+  else if(a==='entry'){entryDate=el.dataset.d||(store.real&&cur&&store.daily[cur]?cur:iso(new Date()));go('eintragen')}
+  else if(a==='addw'){const k=saveEntry(true),dur=n($('#a_dur').value),avg=n($('#a_avg').value),[h,m]=($('#a_start').value||'17:00').split(':').map(Number);
+    if(!dur){toast('Bitte eine Dauer eintragen');return}const d=fromIso(k);d.setHours(h,m,0,0);
+    store.workouts.push({date:k,start:d.getTime(),end:d.getTime()+dur*6e4,type:$('#a_type').value,dur,avg,strain:toStrain(wStrain(dur,avg)),src:'manual'});
+    if(store.daily[k]&&store.daily[k].strainAuto!==false)store.daily[k]=Object.assign({},store.daily[k]||{},{strain:estStrain(k),strainAuto:true,src:'garmin'});
+    store.real=true;save();entryDate=k;pickData();render();toast('Aktivität hinzugefügt')}
+  else if(a==='rmw'){const k=saveEntry(true);store.workouts=store.workouts.filter(o=>!(o.date===k&&String(o.start)===el.dataset.s));if(store.daily[k]&&store.daily[k].strainAuto)store.daily[k].strain=estStrain(k);save();entryDate=k;pickData();render()}
+  else if(a==='esave'){const k=saveEntry(false);entryDate=null;toast('Tag gespeichert');cur=days().includes(k)?k:cur;view='home';prevView='home';try{history.replaceState(null,'','#home')}catch(e){}render();window.scrollTo(0,0)}
   else if(a==='close')$('#sheet').hidden=true;
   else if(a==='dash-edit'){editDash=!editDash;render()}
   else if(a==='dash-tog'){const k=el.dataset.k,i=store.dash.indexOf(k);if(i>=0)store.dash.splice(i,1);else store.dash.push(k);save();if(data!==store)data.dash=store.dash;render()}
@@ -763,6 +841,7 @@ function act(a,el){
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-act]');if(!t)return;if(t.dataset.go){$('#sheet').hidden=true;go(t.dataset.go)}else act(t.dataset.act,t)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('#sheet').hidden=true});
 document.addEventListener('change',async e=>{
+  if(e.target.id==='e_date'){entryDate=e.target.value;render();return}
   if(e.target.id==='need'){const v=n(e.target.value);if(v&&v>=5&&v<=11){store.need=v;save();pickData();toast('Schlafbedarf gespeichert')}}
   else if(e.target.id==='name'){store.name=e.target.value.trim()||'Bene';save();pickData();render()}
   else if(e.target.id==='file'){const done=[];for(const f of e.target.files){try{const r=importRows(parseCSV(await f.text()));if(r)done.push(r)}catch(err){}}
