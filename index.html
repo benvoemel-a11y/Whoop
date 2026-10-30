@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793327370";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793327534";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -450,7 +450,7 @@ function parseWithingsReport(raw){const t=raw.replace(/\s+/g,' '),N='([-+]?\\d[\
   const sm=t.match(new RegExp('(\\d{1,2})\\.?\\s*'+WMRE+'\\s*(\\d{4})','i'));
   if(pm)r.date=wIso(+pm[6],WMON[pm[5].toLowerCase().slice(0,3)],pm[4]);else if(sm){const m=WMON[sm[2].toLowerCase().slice(0,3)];if(m)r.date=wIso(sm[3],m,sm[1])}
   const pair=(key,label,unit)=>{const u=unit?'\\s*'+unit:'';const m=t.match(new RegExp(label+'\\s+'+N+u+'\\s*(?:Neueste|Durchschnitt)(?:'+G+N+u+'\\s*Verlauf)?'));if(m)r[key]=wNum(m[1])};
-  pair('weight','Gewicht','kg');pair('bmr','BMR','kcal');pair('bone','Knochenmasse','kg');pair('muscle','Muskelmasse','kg');pair('visceral','Viszeralfett','');pair('lean','Magermasse','kg');pair('waterKg','Wassermasse','kg');
+  pair('weight','Gewicht','kg');pair('bmr','BMR','kcal');pair('bone','Knochenmasse','kg');pair('muscle','Muskelmasse','kg');pair('visceral','Viszeralfett','');pair('lean','Magermasse','kg');pair('waterKg','Wassermasse','kg');pair('bmi','BMI','');
   const fm=t.match(new RegExp('Fettmasse\\s+'+N+'\\s*(%|kg)\\s*Neueste'));if(fm){const v=wNum(fm[1]);r.fat=fm[2]==='%'?v:(r.weight?+(v/r.weight*100).toFixed(1):null)}
   const ma=t.match(/(\d{1,3})\s*Jahre\s*Stoffwechselalter/);if(ma)r.metAge=+ma[1];
   return r}
@@ -461,7 +461,7 @@ async function importPdf(f){const lib=await loadPdfJs(),doc=await lib.getDocumen
   for(let i=1;i<=doc.numPages;i++){const c=await(await doc.getPage(i)).getTextContent();txt+=' '+c.items.map(x=>x.str).join(' ')}
   const r=parseWithingsReport(txt);if(!r.weight||!r.date)return null;
   const v={weight:+r.weight.toFixed(1)};if(r.fat!=null)v.fat=r.fat;if(r.muscle!=null)v.muscle=+r.muscle.toFixed(1);if(r.bone!=null)v.bone=+r.bone.toFixed(1);
-  if(r.waterKg!=null)v.water=+(r.waterKg/r.weight*100).toFixed(1);if(r.visceral!=null)v.visceral=r.visceral;if(r.bmr!=null)v.bmr=r.bmr;if(r.metAge!=null)v.metAge=r.metAge;
+  if(r.waterKg!=null)v.water=+(r.waterKg/r.weight*100).toFixed(1);if(r.visceral!=null)v.visceral=r.visceral;if(r.bmr!=null)v.bmr=r.bmr;if(r.metAge!=null)v.metAge=r.metAge;if(r.lean!=null)v.lean=+r.lean.toFixed(1);if(r.bmi!=null)v.bmi=r.bmi;
   store.daily[r.date]=Object.assign({},store.daily[r.date],v);addDev('withings');return 'Withings-Bericht vom '+fromIso(r.date).toLocaleDateString('de-DE',{day:'numeric',month:'long'})}
 function importGarmin(o){if(!o||!Array.isArray(o.days))return null;
   const stress=v=>v==null?null:+(clamp(v,0,100)*3/100).toFixed(1);
@@ -804,7 +804,7 @@ function vMetric(key,k){const body=BODY.includes(key),m=MET[key]||MET.hrv;let ra
 function bodyBlock(k){const lk=lastBody(k,x=>D(x).weight),x=lk?D(lk):{},all=days().filter(d=>D(d).weight!=null).reverse();
   const t=(l,v,u)=>`<div class="tile"><span class="l">${l}</span><b class="num">${v==null?'–':fmt(v,1)}<small>${u}</small></b></div>`;
   return `<div class="sec"><span>Körperzusammensetzung</span><span>${lk?fromIso(lk).toLocaleDateString('de-DE',{day:'numeric',month:'short'}):''}</span></div>
-  <div class="tiles" style="margin-top:0">${t('Gewicht',x.weight,'kg')}${t('Körperfett',x.fat,'%')}${t('Muskelmasse',x.muscle,'kg')}${t('Körperwasser',x.water,'%')}${x.bone!=null?t('Knochenmasse',x.bone,'kg'):''}</div>
+  <div class="tiles" style="margin-top:0">${t('Gewicht',x.weight,'kg')}${t('Körperfett',x.fat,'%')}${t('Muskelmasse',x.muscle,'kg')}${t('Körperwasser',x.water,'%')}${x.bone!=null?t('Knochenmasse',x.bone,'kg'):''}${t('Magermasse',x.lean,'kg')}<div class="tile"><span class="l">Viszeralfett</span><b class="num">${x.visceral==null?'–':fmt(x.visceral)}<small>Index</small></b></div>${t('BMI',x.bmi??(x.weight&&store.height?x.weight/((store.height/100)**2):null),'')}<div class="tile"><span class="l">Grundumsatz</span><b class="num">${x.bmr==null?'–':fmt(x.bmr)}<small>kcal</small></b></div></div>
   <label class="btn w" for="file" style="margin-top:16px">WITHINGS IMPORTIEREN</label>
   <div class="msg" id="msg" role="status"></div>
   <div class="sec"><span>Alle Messungen</span><span>${all.length}</span></div>
