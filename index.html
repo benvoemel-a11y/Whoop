@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793325155";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793325260";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -671,11 +671,12 @@ function vTrends(){const end=trendEnd||cur,keys=Array.from({length:7},(_,i)=>shi
   <div class="tstats">${stats.map(([l,v])=>`<div><span class="l">${l}</span>${v}</div>`).join('')}</div><p class="tnote">7-Tage-Durchschnitt</p>`}
 
 const JQ=[['ERHOLUNG',[['cold','Eine kalte Dusche genommen?'],['sauna','In der Sauna gewesen?']]],
-  ['ERNÄHRUNG',[['late','Kurz vor dem Schlafengehen gegessen?'],['water','Genug Wasser getrunken?']]],
+  ['ERNÄHRUNG',[['late','Kurz vor dem Schlafengehen gegessen?'],['water','Genug Wasser getrunken?'],['fastfood','Fast Food gegessen?']]],
   ['LIFESTYLE',[['alcohol','Alkohol konsumiert?'],['caffeine','Koffein konsumiert?'],['screen','Im Bett aufs Handy geschaut?']]],
   ['NAHRUNGSERGÄNZUNG',[['creatine','Kreatin eingenommen?']]],
-  ['SCHLAF',[['samebed','Im selben Bett wie sonst geschlafen?']]]];
-const SUGG=['Meditiert?','Gedehnt oder Mobility gemacht?','Nach 20 Uhr trainiert?','Zucker gegessen?','Mittagsschlaf gemacht?','Draußen in der Sonne gewesen?','Magnesium genommen?','Krank oder angeschlagen?','Lange am Bildschirm gearbeitet?','Mit Freunden getroffen?','Gelernt oder Prüfungsstress?','Viel gesessen?'];
+  ['MENTAL',[['stressday','Stressiger Tag?'],['call','Mit Freundin telefoniert?']]],
+  ['SCHLAF',[['samebed','Im selben Bett wie sonst geschlafen?'],['beforemid','Vor Mitternacht im Bett?'],['nap','Mittagsschlaf gemacht?'],['room','Zimmer kühl und dunkel?']]]];
+const SUGG=['Meditiert?','Gedehnt oder Mobility gemacht?','Nach 20 Uhr trainiert?','Zucker gegessen?','Draußen in der Sonne gewesen?','Magnesium genommen?','Krank oder angeschlagen?','Lange am Bildschirm gearbeitet?','Mit Freunden getroffen?','Gelernt oder Prüfungsstress?','Viel gesessen?'];
 const CATS=['ERHOLUNG','TRAINING','ERNÄHRUNG','LIFESTYLE','NAHRUNGSERGÄNZUNG','MENTAL','SCHLAF'];
 const CAT_RULES=[['NAHRUNGSERGÄNZUNG',/magnesium|kreatin|creatin|vitamin|omega|zink|eisen|supplement|tablette|kapsel|ashwa|melatonin|proteinshake|eingenommen/],
   ['SCHLAF',/schlaf|bett|nacht|nap|aufgewacht|wecker|ins bett/],
