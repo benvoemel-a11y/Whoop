@@ -2,10 +2,8 @@ name: Erinnerungen
 
 on:
   schedule:
-    # Doppelte UTC-Zeiten, damit es im Winter (UTC+1) und Sommer (UTC+2) passt.
-    # Das Skript prüft selbst die Uhrzeit in Berlin.
-    - cron: '5 5,6,12,13,20,21 * * *'
-    - cron: '0 8,9 1 * *'
+    # Alle 15 Minuten; das Skript prüft selbst, welche Erinnerung in Berlin gerade fällig ist.
+    - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -21,7 +19,17 @@ jobs:
         with:
           node-version: '20'
       - run: npm install --no-save web-push@3.6.7
+      - uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: sent-${{ github.run_id }}
+          restore-keys: sent-
       - run: node tools/push_senden.js
         env:
           PUSH_CONFIG: ${{ secrets.PUSH_CONFIG }}
-          MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || (github.event.schedule == '0 8,9 1 * *' && 'monthly' || 'auto') }}
+          MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: state
+          key: sent-${{ github.run_id }}
