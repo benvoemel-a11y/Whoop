@@ -1,6 +1,6 @@
 #!/bin/bash
-# Richtet ein, dass garmin_export.py jeden Morgen automatisch läuft.
-# Ist der Mac um 7:00 zugeklappt, läuft es, sobald er wieder aufwacht.
+# Richtet ein, dass garmin_export.py dreimal am Tag automatisch läuft (7, 14, 22 Uhr).
+# Ist der Mac zu der Zeit zugeklappt, läuft es, sobald er wieder aufwacht.
 # Ausschalten:  bash auto_einrichten.sh aus
 
 LABEL="de.bene.garminexport"
@@ -38,7 +38,8 @@ cat > "$PLIST" <<EOF
   <key>StartCalendarInterval</key>
   <array>
     <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
-    <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>14</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>22</integer><key>Minute</key><integer>0</integer></dict>
   </array>
   <key>StandardOutPath</key><string>$LOG</string>
   <key>StandardErrorPath</key><string>$LOG</string>
@@ -48,7 +49,7 @@ EOF
 
 launchctl unload "$PLIST" 2>/dev/null
 launchctl load "$PLIST"
-echo "Automatik eingerichtet: jeden Tag um 7:00 und 12:00."
+echo "Automatik eingerichtet: jeden Tag um 7:00, 14:00 und 22:00."
 echo "Test läuft jetzt, bitte ca. 30 Sekunden warten ..."
 launchctl start "$LABEL"
 sleep 30
