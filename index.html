@@ -501,8 +501,7 @@ const target=r=>r==null?null:r>=67?'14–18':r>=34?'10–14':'unter 10';
 
 /* ---------- Ansichten ---------- */
 function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[k],jn=j?Object.keys(j).filter(q=>!q.endsWith('_n')&&allQ().some(([id])=>id===q)).length:0;
-  return `<div class="brand">${esc(data.name||'Bene')}</div>
-  <div class="dials">
+  return `<div class="dials" style="padding-top:26px">
     <button class="dial" data-go="schlaf" aria-label="Schlaf ${p??'–'} Prozent">${ring(p==null?0:p/100,'var(--sleep)',{inner:rtext(110,p??'–',p==null?'':'%',30)})}<span class="dlab">SCHLAF ${I.chev}</span></button>
     <button class="dial" data-go="erholung" aria-label="Erholung ${x.rec??'–'} Prozent">${ring(x.rec==null?0:x.rec/100,recCol(x.rec),{inner:rtext(110,x.rec??'–',x.rec==null?'':'%',30)})}<span class="dlab">ERHOLUNG ${I.chev}</span></button>
     <button class="dial" data-go="belastung" aria-label="Belastung ${fmt(x.strain,1)}">${ring(x.strain==null?0:x.strain/21,'var(--strain)',{inner:rtext(110,fmt(x.strain,1),'',30)})}<span class="dlab">BELASTUNG ${I.chev}</span></button>
