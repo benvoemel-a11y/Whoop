@@ -1,0 +1,15 @@
+{
+  "name": "Whoop By Me",
+  "short_name": "Whoop",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#05080a",
+  "theme_color": "#05080a",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05080a">
+<meta name="apple-mobile-web-app-title" content="Whoop">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>Whoop By Me</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: eine Spalte, Datum oben, Inhalt als ruhige Bänder auf Schwarz, Tab-Leiste unten fixiert */
+:root{
+  --bg:#05080a; --panel:#10161a; --panel-2:#172026; --line:#223038;
+  --fg:#f2f5f6; --muted:#8a9aa3; --dim:#55656e;
+  --green:#16ec06; --yellow:#ffde00; --red:#ff3b30;
+  --strain:#0093e7; --sleep:#7ba1bb; --deep:#b48cff; --rem:#5ad1ff; --light:#7ba1bb; --wake:#dfe6ea;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,label:focus-within{outline:2px solid var(--strain);outline-offset:2px;border-radius:8px}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 110px}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.label{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* Kopf */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;padding-block:12px 10px;gap:8px}
+.datenav{display:flex;align-items:center;gap:4px}
+.datenav button{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.datenav button:disabled{opacity:.25;cursor:default}
+.datenav .d{font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;min-width:132px;text-align:center}
+.pill{border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.demo-flag{font-size:11px;color:var(--yellow);letter-spacing:.1em;text-transform:uppercase;text-align:center;padding-bottom:6px}
+
+/* Drei Ringe */
+.rings{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-block:14px 22px}
+.ring{display:flex;flex-direction:column;align-items:center;gap:8px;padding:0}
+.ring svg{width:100%;max-width:112px;height:auto}
+.ring .label{font-size:10px}
+section{padding-block:18px;border-top:1px solid var(--line)}
+section h2{margin:0 0 14px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* Kennzahlen-Liste */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--panel);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat .v{font-size:30px;font-weight:600;line-height:1}
+.stat .v small{font-family:var(--body);font-size:12px;font-weight:500;color:var(--muted);margin-left:3px;letter-spacing:0}
+.stat .cmp{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--muted)}
+
+/* Hero je Tab */
+.hero{display:flex;flex-direction:column;align-items:center;gap:6px;padding-block:10px 22px}
+.hero svg{width:200px;max-width:70%;height:auto}
+.hero p{margin:0;color:var(--muted);font-size:14px;text-align:center;max-width:36ch;text-wrap:balance}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding-block:11px;border-bottom:1px solid var(--line);gap:12px}
+.row:last-child{border-bottom:0}
+.row span:first-child{color:var(--muted)}
+.row .num{font-size:20px;font-weight:600}
+.stagebar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:14px;gap:2px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:8px;vertical-align:1px}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--dim);font-family:var(--body);font-size:10px}
+.workout{display:flex;gap:14px;align-items:center;padding:12px;background:var(--panel);border-radius:14px}
+.workout+.workout{margin-top:8px}
+.badge{width:52px;height:52px;border-radius:50%;border:3px solid var(--strain);display:grid;place-items:center;font-family:var(--display);font-size:19px;font-weight:600;flex:none}
+.workout .t{font-weight:600}
+.workout .s{font-size:13px;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+
+/* Tab-Leiste */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:rgba(5,8,10,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:8px max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+nav button[aria-selected="true"]{color:var(--fg)}
+nav svg{width:22px;height:22px}
+
+/* Daten-Blatt */
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.sheet .card{background:var(--panel);width:100%;max-width:560px;max-height:88%;overflow:auto;border-radius:20px 20px 0 0;padding:22px max(18px,env(safe-area-inset-left,0px)) calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+.sheet h3{margin:0;font-family:var(--display);font-size:26px;font-weight:600}
+.sheet ol{margin:0;padding-left:20px;color:var(--muted);line-height:1.55}
+.sheet ol b{color:var(--fg);font-weight:600}
+.btn{display:block;text-align:center;border-radius:12px;padding:13px;font-weight:600;background:var(--fg);color:var(--bg)}
+.btn.ghost{background:var(--panel-2);color:var(--fg)}
+.btn.warn{background:transparent;border:1px solid var(--line);color:var(--red)}
+.field{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.field input{width:84px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--fg);padding:9px;font:inherit;text-align:center}
+.msg{font-size:13px;color:var(--green);min-height:1em}
+.msg.err{color:var(--red)}
+@media (prefers-reduced-motion:no-preference){.arc{transition:stroke-dashoffset .7s ease-out}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="datenav">
+      <button id="prev" aria-label="Vorheriger Tag"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="d" id="dateLabel">Heute</div>
+      <button id="next" aria-label="Nächster Tag"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <button class="pill" id="openData">Daten</button>
+  </header>
+  <div class="demo-flag" id="demoFlag" hidden>Beispieldaten · Import unter „Daten“</div>
+  <main id="view"></main>
+</div>
+
+<nav><div class="in" role="tablist">
+  <button role="tab" data-tab="heute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>Heute</button>
+  <button role="tab" data-tab="schlaf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>Schlaf</button>
+  <button role="tab" data-tab="erholung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>Erholung</button>
+  <button role="tab" data-tab="belastung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg>Belastung</button>
+</div></nav>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="card" role="dialog" aria-labelledby="sheetTitle">
+    <h3 id="sheetTitle">Daten</h3>
+    <ol>
+      <li>Band in der <b>OpenStrap-App</b> synchronisieren.</li>
+      <li>In OpenStrap <b>CSV-Export</b> wählen: „Daily metrics“, „Sleep stages“ und „Workouts“.</li>
+      <li>Die Dateien hier unten auswählen. Alte Tage werden ergänzt, nichts wird doppelt gezählt.</li>
+    </ol>
+    <label class="btn" for="file">CSV-Dateien auswählen</label>
+    <input id="file" type="file" accept=".csv,text/csv" multiple hidden>
+    <div class="msg" id="msg"></div>
+    <div class="field"><span>Schlafbedarf (Stunden)</span><input id="need" type="number" min="5" max="11" step="0.25"></div>
+    <button class="btn ghost" id="useDemo">Beispieldaten anzeigen</button>
+    <button class="btn warn" id="wipe">Meine Daten löschen</button>
+    <button class="btn ghost" id="closeSheet">Fertig</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+const KEY='wbm.v1';
+const C={green:'var(--green)',yellow:'var(--yellow)',red:'var(--red)',strain:'var(--strain)',sleep:'var(--sleep)'};
+const STAGES={wake:{n:'Wach',c:'var(--wake)'},light:{n:'Leicht',c:'var(--light)'},deep:{n:'Tief',c:'var(--deep)'},rem:{n:'REM',c:'var(--rem)'}};
+const SPORT={running:'Laufen',run:'Laufen',cycling:'Radfahren',bike:'Radfahren',walking:'Gehen',walk:'Gehen',strength:'Krafttraining',weightlifting:'Krafttraining',gym:'Krafttraining',swimming:'Schwimmen',yoga:'Yoga',hiit:'HIIT'};
+
+/* ---------- Speicher ---------- */
+let store={daily:{},sleep:{},workouts:[],need:8,real:false};
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.daily)store=Object.assign(store,s)}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
+
+/* ---------- CSV ---------- */
+function parseCSV(text){
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(q){if(ch=='"'){if(text[i+1]=='"'){f+='"';i++}else q=false}else f+=ch}
+    else if(ch=='"')q=true;else if(ch==','){row.push(f);f=''}
+    else if(ch=='\n'||ch=='\r'){if(ch=='\r'&&text[i+1]=='\n')i++;row.push(f);rows.push(row);row=[];f=''}
+    else f+=ch}
+  if(f!==''||row.length){row.push(f);rows.push(row)}
+  const head=(rows.shift()||[]).map(h=>h.trim().toLowerCase());
+  return rows.filter(r=>r.some(x=>x!=='')).map(r=>Object.fromEntries(head.map((h,i)=>[h,r[i]??''])));
+}
+const n=v=>{if(v===''||v==null)return null;const x=Number(v);return isFinite(x)?x:null};
+const ts=v=>{const x=n(v);if(x==null)return null;return x>1e12?x:x*1000};
+function stageOf(v){const s=String(v).toLowerCase();
+  if(/^\d+$/.test(s))return ['wake','light','deep','rem'][+s]||'light';
+  if(s.includes('wake')||s.includes('awake'))return 'wake';
+  if(s.includes('deep')||s.includes('sws')||s.includes('n3'))return 'deep';
+  if(s.includes('rem'))return 'rem';return 'light'}
+
+function importRows(rows){
+  if(!rows.length)return 'leer';
+  const h=Object.keys(rows[0]);
+  if(h.includes('readiness')||h.includes('resting_hr')){
+    rows.forEach(r=>{if(!r.date)return;let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
+      store.daily[r.date]={rec,rhr:n(r.resting_hr),hrv:n(r.hrv),resp:n(r.resp_rate),strain:n(r.strain),
+        kcal:n(r.total_calories),akcal:n(r.active_calories),sleep:n(r.sleep_min),deep:n(r.deep_min),rem:n(r.rem_min),
+        light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps)}});
+    return 'Tageswerte';}
+  if(h.includes('stage')){
+    const by={};rows.forEach(r=>{const a=ts(r.start_ts),b=ts(r.end_ts);if(!r.date||a==null||b==null)return;(by[r.date]=by[r.date]||[]).push([a,b,stageOf(r.stage)])});
+    Object.entries(by).forEach(([d,l])=>store.sleep[d]=l.sort((x,y)=>x[0]-y[0]));
+    return 'Schlafphasen';}
+  if(h.includes('duration_min')||h.includes('type')){
+    const seen=new Set(store.workouts.map(w=>w.start));
+    rows.forEach(r=>{const s=ts(r.start_ts);if(s==null||seen.has(s))return;seen.add(s);
+      store.workouts.push({date:r.date,start:s,type:r.type,dur:n(r.duration_min),strain:n(r.strain),kcal:n(r.calories),max:n(r.max_hr)})});
+    return 'Workouts';}
+  return 'unbekannt';
+}
+
+/* ---------- Beispieldaten ---------- */
+function demo(){
+  let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const st={daily:{},sleep:{},workouts:[],need:store.need||8,real:false};
+  const today=new Date();today.setHours(12,0,0,0);
+  for(let i=44;i>=0;i--){
+    const d=new Date(today);d.setDate(d.getDate()-i);const k=iso(d);
+    const sleep=Math.round(380+rnd()*130),deep=Math.round(sleep*(.15+rnd()*.08)),rem=Math.round(sleep*(.2+rnd()*.07));
+    const hrv=Math.round(58+rnd()*34),rhr=Math.round(48+rnd()*8);
+    const rec=Math.max(8,Math.min(99,Math.round((hrv-55)*1.6+(sleep-380)/3+(56-rhr)*2+25+rnd()*12)));
+    const run=rnd()>.45,str=run?+(9+rnd()*8).toFixed(1):+(4+rnd()*5).toFixed(1);
+    st.daily[k]={rec,rhr,hrv,resp:+(14+rnd()*1.6).toFixed(1),strain:str,kcal:Math.round(2100+str*55),akcal:Math.round(str*55),
+      sleep,deep,rem,light:sleep-deep-rem,eff:Math.round(86+rnd()*10),steps:Math.round(7000+rnd()*7000)};
+    // Hypnogramm
+    const bed=new Date(d);bed.setDate(bed.getDate()-1);bed.setHours(23,10+Math.round(rnd()*40),0,0);
+    let t=bed.getTime();const end=t+(sleep+Math.round(sleep*.06))*60000;const l=[];
+    while(t<end){const cyc=Math.min(end,t+90*60000);const prog=(t-bed.getTime())/(end-bed.getTime());
+      const parts=[['light',.35],['deep',prog<.5?.3:.08],['light',.2],['rem',prog<.5?.12:.3],['wake',.03]];
+      const tot=parts.reduce((a,p)=>a+p[1],0);
+      for(const[s,w]of parts){const len=(cyc-t)*w/tot;if(len<60000)continue;l.push([t,t+len,s]);t+=len}t=cyc}
+    st.sleep[k]=l;
+    if(run){const s=new Date(d);s.setHours(17,30,0,0);const dur=Math.round(30+rnd()*45);
+      st.workouts.push({date:k,start:s.getTime(),type:'running',dur,strain:+(str-3).toFixed(1),kcal:Math.round(dur*11),max:Math.round(168+rnd()*22)})}
+  }
+  return st;
+}
+
+/* ---------- Helfer ---------- */
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const fromIso=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d,12)};
+const recColor=v=>v==null?'var(--dim)':v>=67?C.green:v>=34?C.yellow:C.red;
+const hm=m=>m==null?'–':Math.floor(m/60)+':'+String(Math.round(m%60)).padStart(2,'0');
+const fmt=(v,d=0)=>v==null?'–':Number(v).toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const days=()=>Object.keys(data.daily).sort();
+function avg(key,end,len=30){const ks=days().filter(k=>k<end).slice(-len).map(k=>data.daily[k][key]).filter(v=>v!=null);return ks.length?ks.reduce((a,b)=>a+b,0)/ks.length:null}
+function perf(d){return d&&d.sleep!=null?Math.min(100,Math.round(d.sleep/(data.need*60)*100)):null}
+
+function ring(val,max,color,text,sub,size=120,stroke=9){
+  const r=(size-stroke)/2-2,c=2*Math.PI*r,p=val==null?0:Math.max(0,Math.min(1,val/max));
+  return `<svg viewBox="0 0 ${size} ${size}" role="img" aria-label="${sub} ${text}">
+  <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--panel-2)" stroke-width="${stroke}"/>
+  <circle class="arc" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+   stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p)}" transform="rotate(-90 ${size/2} ${size/2})"/>
+  <text x="50%" y="${size/2+size*.1}" text-anchor="middle" fill="var(--fg)" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="600" font-size="${size*.3}">${text}</text></svg>`;
+}
+function cmp(v,a,unit,lowerIsBetter){
+  if(v==null||a==null)return '<span class="cmp">kein Vergleich</span>';
+  const diff=v-a,rel=Math.abs(diff)/(Math.abs(a)||1);
+  const cls=rel<.03?'flat':((diff>0)!==!!lowerIsBetter?'up':'down');
+  const arrow=rel<.03?'→':diff>0?'↑':'↓';
+  return `<span class="cmp"><span class="${cls}">${arrow}</span>Ø 30 T: ${fmt(a,unit)}</span>`;
+}
+function stat(label,v,unit,a,dec=0,lower=false,disp){return `<div class="stat"><span class="label">${label}</span>
+  <span class="v num">${disp??fmt(v,dec)}<small>${unit}</small></span>${cmp(v,a,dec,lower)}</div>`}
+
+function bars(keys,valFn,colorFn,max,h=120){
+  const w=320,pad=18,bw=(w-pad)/keys.length;
+  let s=`<svg class="chart" viewBox="0 0 ${w} ${h+16}">`;
+  [0.5,1].forEach(f=>{const y=h-(h-6)*f;s+=`<line x1="${pad}" x2="${w}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="0" y="${y+3}">${Math.round(max*f)}</text>`});
+  keys.forEach((k,i)=>{const v=valFn(k);if(v==null)return;const bh=Math.max(2,(h-6)*Math.min(1,v/max));
+    s+=`<rect x="${pad+i*bw+bw*.18}" y="${h-bh}" width="${bw*.64}" height="${bh}" rx="${Math.min(3,bw*.3)}" fill="${colorFn(v,k)}" opacity="${k===cur?1:.75}"/>`});
+  [0,keys.length-1].forEach(i=>{if(keys[i])s+=`<text x="${pad+i*bw+bw/2}" y="${h+13}" text-anchor="${i?'end':'start'}">${fromIso(keys[i]).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}</text>`});
+  return s+'</svg>';
+}
+function hypno(list){
+  if(!list||!list.length)return '<p class="empty">Keine Schlafphasen für diese Nacht.</p>';
+  const a=list[0][0],b=list[list.length-1][1],w=320,h=110,lv={wake:8,rem:34,light:60,deep:86};
+  let s=`<svg class="chart" viewBox="0 0 ${w} ${h+16}">`;
+  Object.entries(lv).forEach(([k,y])=>s+=`<line x1="0" x2="${w}" y1="${y}" y2="${y}" stroke="var(--line)"/>`);
+  list.forEach(([x0,x1,st])=>{const X=(x0-a)/(b-a)*w,W=Math.max(1,(x1-x0)/(b-a)*w);
+    s+=`<rect x="${X}" y="${lv[st]-7}" width="${W}" height="14" rx="2" fill="${STAGES[st].c}"/>`});
+  const t=x=>new Date(x).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  return s+`<text x="0" y="${h+14}">${t(a)}</text><text x="${w}" y="${h+14}" text-anchor="end">${t(b)}</text></svg>`;
+}
+function workouts(d){
+  const l=data.workouts.filter(w=>w.date===d).sort((x,y)=>x.start-y.start);
+  if(!l.length)return '<p class="empty">Keine Aktivität an diesem Tag.</p>';
+  return l.map(w=>`<div class="workout"><div class="badge">${fmt(w.strain,1)}</div><div>
+    <div class="t">${SPORT[String(w.type).toLowerCase()]||w.type||'Aktivität'}</div>
+    <div class="s">${new Date(w.start).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} · ${fmt(w.dur)} min · ${fmt(w.kcal)} kcal${w.max?' · max '+w.max+' bpm':''}</div></div></div>`).join('');
+}
+
+/* ---------- Ansichten ---------- */
+const V={
+heute(d,x){const p=perf(x);return `
+  <div class="rings">
+    <button class="ring" data-go="schlaf">${ring(p,100,C.sleep,p==null?'–':p+'%','Schlaf')}<span class="label">Schlaf</span></button>
+    <button class="ring" data-go="erholung">${ring(x.rec,100,recColor(x.rec),x.rec==null?'–':Math.round(x.rec)+'%','Erholung')}<span class="label">Erholung</span></button>
+    <button class="ring" data-go="belastung">${ring(x.strain,21,C.strain,fmt(x.strain,1),'Belastung')}<span class="label">Belastung</span></button>
+  </div>
+  <section><h2>Kennzahlen</h2><div class="stats">
+    ${stat('HRV',x.hrv,'ms',avg('hrv',d))}
+    ${stat('Ruhepuls',x.rhr,'bpm',avg('rhr',d),0,true)}
+    ${stat('Schlaf',x.sleep,'h',avg('sleep',d),0,false,hm(x.sleep))}
+    ${stat('Atemfrequenz',x.resp,'/min',avg('resp',d),1)}
+    ${stat('Kalorien',x.kcal,'kcal',avg('kcal',d))}
+    ${stat('Schritte',x.steps,'',avg('steps',d))}
+  </div></section>
+  <section><h2>Aktivitäten</h2>${workouts(d)}</section>`},
+
+schlaf(d,x){const p=perf(x),tot=(x.light||0)+(x.deep||0)+(x.rem||0)||1,list=data.sleep[d],
+  wake=list?Math.round(list.filter(e=>e[2]==='wake').reduce((a,e)=>a+(e[1]-e[0]),0)/60000):null;
+  const ks=days().filter(k=>k<=d).slice(-14);
+  return `<div class="hero">${ring(p,100,C.sleep,p==null?'–':p+'%','Schlafleistung',200,14)}
+    <span class="label">Schlafleistung</span><p>${hm(x.sleep)} h geschlafen von ${hm(data.need*60)} h Bedarf.</p></div>
+  <section><h2>Phasen</h2>
+    <div class="stagebar">${['light','deep','rem'].map(s=>`<span style="flex:${x[s]||0};background:${STAGES[s].c}"></span>`).join('')}</div>
+    <div class="rows">
+    ${['deep','rem','light'].map(s=>`<div class="row"><span><i class="dot" style="background:${STAGES[s].c}"></i>${STAGES[s].n}</span><span class="num">${hm(x[s])} <small style="color:var(--muted);font-family:var(--body);font-size:13px">${Math.round((x[s]||0)/tot*100)}%</small></span></div>`).join('')}
+    <div class="row"><span><i class="dot" style="background:var(--wake)"></i>Wach</span><span class="num">${wake==null?'–':hm(wake)}</span></div>
+    <div class="row"><span>Effizienz</span><span class="num">${x.eff==null?'–':Math.round(x.eff)+'%'}</span></div>
+    </div></section>
+  <section><h2>Nacht</h2>${hypno(list)}</section>
+  <section><h2>Stunden · 14 Tage</h2>${bars(ks,k=>data.daily[k].sleep/60,()=>C.sleep,10)}</section>`},
+
+erholung(d,x){const ks=days().filter(k=>k<=d).slice(-30),c=recColor(x.rec);
+  const msg=x.rec==null?'Für diesen Tag gibt es keine Erholung.':x.rec>=67?'Dein Körper ist bereit für eine harte Einheit.':x.rec>=34?'Moderate Belastung passt heute gut.':'Heute lieber locker bleiben und gut schlafen.';
+  return `<div class="hero">${ring(x.rec,100,c,x.rec==null?'–':Math.round(x.rec)+'%','Erholung',200,14)}
+    <span class="label">Erholung</span><p>${msg}</p></div>
+  <section><h2>Grundlage</h2><div class="rows">
+    <div class="row"><span>Herzfrequenzvariabilität</span><span class="num">${fmt(x.hrv)} ms</span></div>
+    <div class="row"><span>Ruhepuls</span><span class="num">${fmt(x.rhr)} bpm</span></div>
+    <div class="row"><span>Atemfrequenz</span><span class="num">${fmt(x.resp,1)} /min</span></div>
+    <div class="row"><span>Schlafleistung</span><span class="num">${perf(x)??'–'}%</span></div>
+  </div></section>
+  <section><h2>Erholung · 30 Tage</h2>${bars(ks,k=>data.daily[k].rec,v=>recColor(v),100)}</section>
+  <section><h2>HRV · 30 Tage</h2>${bars(ks,k=>data.daily[k].hrv,()=>'var(--muted)',Math.max(100,...ks.map(k=>data.daily[k].hrv||0)))}</section>`},
+
+belastung(d,x){const ks=days().filter(k=>k<=d).slice(-30);
+  const target=x.rec==null?null:x.rec>=67?'14–18':x.rec>=34?'10–14':'unter 10';
+  return `<div class="hero">${ring(x.strain,21,C.strain,fmt(x.strain,1),'Belastung',200,14)}
+    <span class="label">Tagesbelastung · 0–21</span><p>${target?'Passend zur Erholung von heute: '+target+'.':'Keine Empfehlung ohne Erholungswert.'}</p></div>
+  <section><h2>Aktivitäten</h2>${workouts(d)}</section>
+  <section><h2>Energie</h2><div class="rows">
+    <div class="row"><span>Kalorien gesamt</span><span class="num">${fmt(x.kcal)} kcal</span></div>
+    <div class="row"><span>Davon aktiv</span><span class="num">${fmt(x.akcal)} kcal</span></div>
+    <div class="row"><span>Schritte</span><span class="num">${fmt(x.steps)}</span></div>
+  </div></section>
+  <section><h2>Belastung · 30 Tage</h2>${bars(ks,k=>data.daily[k].strain,()=>C.strain,21)}</section>`}
+};
+
+/* ---------- Steuerung ---------- */
+let data,cur,tab='heute';
+function pickData(){data=store.real&&Object.keys(store.daily).length?store:Object.assign(demo(),{need:store.need});
+  document.getElementById('demoFlag').hidden=data===store;
+  const ds=days();if(!ds.includes(cur))cur=ds[ds.length-1]}
+function render(){
+  const ds=days(),i=ds.indexOf(cur),x=data.daily[cur]||{};
+  const t=iso(new Date()),y=iso(new Date(Date.now()-864e5));
+  document.getElementById('dateLabel').textContent=cur===t?'Heute':cur===y?'Gestern':fromIso(cur).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
+  document.getElementById('prev').disabled=i<=0;document.getElementById('next').disabled=i>=ds.length-1;
+  document.getElementById('view').innerHTML=V[tab](cur,x);
+  document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+}
+function go(t){tab=t;if(location.hash!=='#'+t)history.replaceState(null,'','#'+t);render();scrollTo(0,0)}
+function step(dir){const ds=days(),i=ds.indexOf(cur)+dir;if(ds[i]){cur=ds[i];render()}}
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
+document.getElementById('prev').onclick=()=>step(-1);
+document.getElementById('next').onclick=()=>step(1);
+const sheet=document.getElementById('sheet'),msg=document.getElementById('msg'),need=document.getElementById('need');
+document.getElementById('openData').onclick=()=>{need.value=store.need;msg.textContent='';sheet.hidden=false};
+document.getElementById('closeSheet').onclick=()=>sheet.hidden=true;
+sheet.onclick=e=>{if(e.target===sheet)sheet.hidden=true};
+need.onchange=()=>{const v=n(need.value);if(v&&v>=5&&v<=11){store.need=v;save();pickData();render()}};
+document.getElementById('file').onchange=async e=>{
+  const done=[];msg.className='msg';
+  for(const f of e.target.files){try{done.push(importRows(parseCSV(await f.text())))}catch(err){done.push('Fehler')}}
+  e.target.value='';
+  const ok=done.filter(d=>!['leer','unbekannt','Fehler'].includes(d));
+  if(ok.length){store.real=true;save();cur=null;pickData();render();msg.textContent='Importiert: '+ok.join(', ')+'.'}
+  else{msg.className='msg err';msg.textContent='Keine passende Datei. Nimm den CSV-Export aus OpenStrap (Daily, Sleep oder Workouts).'}
+};
+document.getElementById('useDemo').onclick=()=>{store.real=false;save();cur=null;pickData();render();sheet.hidden=true};
+const wipe=document.getElementById('wipe');
+wipe.onclick=()=>{if(wipe.dataset.sure){store={daily:{},sleep:{},workouts:[],need:store.need,real:false};save();cur=null;pickData();render();wipe.textContent='Meine Daten löschen';delete wipe.dataset.sure;msg.textContent='Gelöscht.'}
+  else{wipe.dataset.sure=1;wipe.textContent='Wirklich löschen? Nochmal tippen'}};
+addEventListener('keydown',e=>{if(!sheet.hidden&&e.key==='Escape')sheet.hidden=true;else if(e.key==='ArrowLeft')step(-1);else if(e.key==='ArrowRight')step(1)});
+addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(V[h]&&h!==tab){tab=h;render()}});
+
+load();const h=location.hash.slice(1);if(V[h])tab=h;pickData();render();
+})();
+</script>
+
+</body>
+</html>
