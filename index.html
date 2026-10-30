@@ -238,6 +238,11 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .hidb.on{color:var(--fg)}
 .yn button.hidb{width:auto;padding:0 12px;display:block;white-space:nowrap;background:var(--card-2)}
 .yn button.hidb.on{color:var(--fg)}
+.avrow{display:flex;align-items:center;gap:16px;background:var(--card);border-radius:14px;padding:16px;margin-top:10px}
+.avatar.big{width:64px;height:64px;font-size:26px;flex:none;border:1px solid rgba(255,255,255,.12)}
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;flex:1;min-width:0}
+.sw-c{width:100%;aspect-ratio:1;max-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.15);justify-self:center}
+.sw-c[aria-checked="true"]{outline:3px solid #fff;outline-offset:2px}
 .prompt-w{position:relative}
 .prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
 .prompt-x svg{width:16px;height:16px}
@@ -794,7 +799,12 @@ function vDevices(){const ds=store.devices||{},list=Object.keys(ds);
     ${devOpen===t?`<ol class="steps-list">${SETUP[t].map(x=>`<li>${x}</li>`).join('')}</ol><label class="btn w" for="file">DATEI AUSWÄHLEN</label>`:''}</div>`).join('')}
   <p class="about" style="margin-top:18px">Die App selbst verbindet sich nicht per Bluetooth. Das Band koppelst du in OpenStrap Edge, die App liest den Export. So bleiben alle Daten auf deinem Handy.</p>
   ${list.length?'<button class="btn warn" data-act="devreset">GERÄTELISTE LEEREN</button>':''}`}
+const AVC=[['#43d3c0','Türkis'],['#3fdd85','Grün'],['#0093e7','Blau'],['#7ba1bb','Graublau'],['#9b6cf3','Lila'],['#e67cf0','Pink'],['#ff4d5a','Rot'],['#f5a33a','Orange'],['#ffde00','Gelb'],['#f2f4f5','Weiß'],['#6e7981','Grau'],['#1d2328','Schwarz']];
+const avc=()=>store.avColor||'#43d3c0';
+const avtx=c=>{const h=c.replace('#',''),r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return (r*299+g*587+b*114)/1000>150?'#101418':'#ffffff'};
 function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</span></div>
+  <div class="avrow"><span class="avatar big" style="background:${avc()};color:${avtx(avc())}">${esc((store.name||'B')[0].toUpperCase())}</span>
+    <div class="swatches" role="radiogroup" aria-label="Farbe des Profilbilds">${AVC.map(([c,n])=>`<button class="sw-c" role="radio" aria-checked="${avc()===c}" aria-label="${n}" data-act="avcol" data-c="${c}" style="background:${c}"></button>`).join('')}</div></div>
   <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
   <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>
   <button class="tog" data-act="togglegarmin" aria-pressed="${!store.hideGarmin}" style="width:100%;margin-top:24px"><span>Garmin-Bereich anzeigen</span><span class="sw"></span></button>
@@ -853,7 +863,7 @@ function dayLabel(k){const t=iso(new Date());return k===t?'HEUTE':k===shift(t,-1
 function head(){const ds=days(),i=ds.indexOf(cur);
   const lbl=!store.real?'DEMO':({garmin:'GARMIN',openstrap:'WHOOP'})[D(cur).src]||'';
   const strap=`<button class="strap" data-go="geraete" aria-label="Geräte">${lbl?lbl+' ':''}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></button>`;
-  const av=SUB.includes(view)?`<button class="avatar" style="background:rgba(255,255,255,.08);color:#fff" data-act="back" aria-label="Zurück"><span style="width:18px;height:18px;display:grid">${I.l}</span></button>`:`<button class="avatar" data-go="mehr" aria-label="Profil">${esc((data.name||'B')[0].toUpperCase())}</button>`;
+  const av=SUB.includes(view)?`<button class="avatar" style="background:rgba(255,255,255,.08);color:#fff" data-act="back" aria-label="Zurück"><span style="width:18px;height:18px;display:grid">${I.l}</span></button>`:`<button class="avatar" style="background:${avc()};color:${avtx(avc())}" data-go="mehr" aria-label="Profil">${esc((data.name||'B')[0].toUpperCase())}</button>`;
   let mid;
   if(view==='mehr')mid='<span class="htitle">MEHR</span>';
   else if(view==='trends'){const end=trendEnd||cur,st=shift(end,-6),f=k=>fromIso(k).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
@@ -895,6 +905,7 @@ function act(a,el){
   else if(a==='hidegarmin'){store.hideGarmin=true;save();render();toast('Ausgeblendet. Unter „Mehr“ wieder einschaltbar.')}
   else if(a==='devopen'){devOpen=devOpen===el.dataset.t?null:el.dataset.t;render()}
   else if(a==='devreset'){store.devices={};save();render()}
+  else if(a==='avcol'){store.avColor=el.dataset.c;save();render()}
   else if(a==='togglegarmin'){store.hideGarmin=!store.hideGarmin;save();render()}
   else if(a==='entry'){entryDate=el.dataset.d||(store.real&&cur&&store.daily[cur]?cur:iso(new Date()));go('eintragen')}
   else if(a==='addw'){const k=saveEntry(true),dur=n($('#a_dur').value),avg=n($('#a_avg').value),[h,m]=($('#a_start').value||'17:00').split(':').map(Number);
