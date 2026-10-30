@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793331147";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793356134";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -479,8 +479,9 @@ function importGarmin(o){if(!o||!Array.isArray(o.days))return null;
   const stress=v=>v==null?null:+(clamp(v,0,100)*3/100).toFixed(1);
   o.days.forEach(d=>{if(!d.date)return;const{date,...v}=d;if('stress'in v)v.stress=stress(v.stress);if(v.rec!=null)v.rec=Math.round(clamp(v.rec,0,100));
     if(v.sleep!=null&&v.bed&&v.up&&v.eff==null)v.eff=Math.round(v.sleep/((v.up-v.bed)/6e4)*100);
+    const old=store.daily[date];if(old&&old.sleepManual){['bed','up','sleep','deep','rem','light','wake','eff'].forEach(f=>delete v[f])}
     store.daily[date]=Object.assign({},store.daily[date],v,{src:'garmin'})});
-  Object.entries(o.sleep||{}).forEach(([d,l])=>{if(Array.isArray(l)&&l.length)store.sleep[d]=l.slice().sort((a,b)=>a[0]-b[0])});
+  Object.entries(o.sleep||{}).forEach(([d,l])=>{if(Array.isArray(l)&&l.length&&!(store.daily[d]&&store.daily[d].sleepManual))store.sleep[d]=l.slice().sort((a,b)=>a[0]-b[0])});
   const seen=new Set(store.workouts.map(w=>w.start));
   (o.workouts||[]).forEach(w=>{if(!w.start||!w.date||seen.has(w.start))return;seen.add(w.start);store.workouts.push(Object.assign({},w,{strain:toStrain(wStrain(w.dur,w.avg)),src:'garmin'}))});
   o.days.forEach(d=>{const x=store.daily[d.date];if(x&&(x.strain==null||x.strainAuto)){x.strain=estStrain(d.date);x.strainAuto=true}});
@@ -557,7 +558,7 @@ const D=k=>data.daily[k]||{};
 const hist=(f,k,len=30)=>days().filter(x=>x<k).slice(-len).map(f).filter(v=>v!=null);
 function need(k){const p=D(shift(k,-1)).strain;return Math.round(data.need*60+Math.max(0,(p??10)-10)*5)}
 function perf(k){const x=D(k);return x.sleep==null?null:Math.min(100,Math.round(x.sleep/need(k)*100))}
-function nightInfo(k){const l=data.sleep[k];if(!l||!l.length)return null;const by={wake:0,light:0,deep:0,rem:0};
+function nightInfo(k){if(D(k).sleepManual)return null;const l=data.sleep[k];if(!l||!l.length)return null;const by={wake:0,light:0,deep:0,rem:0};
   l.forEach(([a,b,t])=>by[t]+=(b-a)/6e4);return{s:l[0][0],e:l[l.length-1][1],bed:(l[l.length-1][1]-l[0][0])/6e4,by,list:l}}
 function resto(k){const x=D(k);return x.deep==null&&x.rem==null?null:(x.deep||0)+(x.rem||0)}
 function stressOf(k){const v=D(k).stress;return v==null?null:v>3?+(v*3/100).toFixed(1):v}
@@ -689,7 +690,7 @@ function vSleep(k){const x=D(k),p=perf(k),ni=nightInfo(k),nd=need(k);
     <div class="sp-sides"><div><b class="num" style="color:var(--sleep)">${hm(x.sleep)}</b><span class="tag" style="color:var(--sleep);border-color:var(--sleep)">SCHLAFSTUNDEN</span></div>
     <div><b class="num" style="color:var(--mint)">${hm(nd)}</b><span class="tag" style="color:var(--mint);border-color:var(--mint)">SCHLAFBEDARF</span></div></div></div>
   ${insight(...sleepInsight(k))}
-  <div class="sec"><span>Schlafaktivitäten</span></div>${sleepRow(k)?`<div>${sleepRow(k)}</div>`:'<p class="empty">Keine Schlafaktivität.</p>'}
+  <div class="sec"><span>Schlafaktivitäten</span><button class="mini" data-act="sleepedit" style="color:var(--fg)">BEARBEITEN ${I.pencil}</button></div>${D(k).sleepManual?'<p class="hint" style="margin:-4px 0 8px">Von dir angepasst</p>':''}${sleepRow(k)?`<div>${sleepRow(k)}</div>`:'<p class="empty">Keine Schlafaktivität.</p>'}
   ${night}
   <div class="sec"><span>Schlafstatistik</span><span>vs. letzte 30 Tage</span></div>
   ${['sleep','perf','resto','inbed','eff'].map(m=>mrow(m,k)).join('')}`}
@@ -1011,6 +1012,30 @@ function sheetWipe(step){const nd=Object.keys(store.daily||{}).length,nj=Object.
     <input id="wipeword" autocomplete="off" autocapitalize="characters" placeholder="LÖSCHEN" style="width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:12px;color:var(--fg);padding:14px;font:inherit;text-align:center;letter-spacing:.1em">
     <button class="btn w" data-act="close" style="margin-top:18px">ABBRECHEN</button><button class="btn warn" data-act="wipe3" id="wipe3" disabled style="opacity:.4">ENDGÜLTIG LÖSCHEN</button>`)}
 
+/* ---------- Schlaf bearbeiten ---------- */
+function sheetSleep(k){if(!store.real){toast('Erst eigene Daten importieren');return}
+  const x=store.daily[k]||{},ni=nightInfo(k),bed=x.bed||(ni&&ni.s),up=x.up||(ni&&ni.e);
+  openSheet('SCHLAF BEARBEITEN',`<p class="about" style="margin-top:0">Nacht auf ${fromIso(k).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</p>
+    <div class="field"><label for="s_bed">Eingeschlafen</label><input id="s_bed" type="time" value="${bed?toT(bed):''}"></div>
+    <div class="field"><label for="s_up">Aufgewacht</label><input id="s_up" type="time" value="${up?toT(up):''}"></div>
+    <div class="field"><label for="s_wake">Nachts wach (h:mm)<small>Leer lassen, wenn du es nicht weißt</small></label><input id="s_wake" placeholder="0:20" value="${x.wake!=null?toHM(x.wake):''}"></div>
+    <button class="btn w" data-act="sleepsave" data-k="${k}" style="margin-top:18px">SPEICHERN</button>
+    ${x.sleepManual?`<button class="btn g" data-act="sleepreset" data-k="${k}">GARMIN-WERTE WIEDERHERSTELLEN</button>`:''}
+    <button class="btn g" data-act="close">ABBRECHEN</button>`)}
+function saveSleep(k){const b=$('#s_bed').value,u=$('#s_up').value;if(!b||!u){toast('Bitte beide Uhrzeiten eintragen');return}
+  const x=store.daily[k]=store.daily[k]||{};
+  if(!x.sleepOrig)x.sleepOrig={bed:x.bed,up:x.up,sleep:x.sleep,deep:x.deep,rem:x.rem,light:x.light,wake:x.wake,eff:x.eff,list:store.sleep[k]||null};
+  const mk=(t,prev)=>{const[h,m]=t.split(':').map(Number),d=fromIso(k);d.setHours(h,m,0,0);if(prev&&h>=12)d.setDate(d.getDate()-1);return d.getTime()};
+  const bed=mk(b,true),up=mk(u,false);if(up<=bed){toast('Aufwachen muss nach dem Einschlafen sein');return}
+  const wIn=$('#s_wake').value.trim(),wake=wIn?pHM(wIn):(x.sleepOrig.wake||0),total=Math.round((up-bed)/6e4),sleep=Math.max(0,total-(wake||0));
+  const o=x.sleepOrig,stSum=(o.deep||0)+(o.rem||0)+(o.light||0);
+  if(stSum>0){const f=sleep/stSum;x.deep=Math.round((o.deep||0)*f);x.rem=Math.round((o.rem||0)*f);x.light=sleep-x.deep-x.rem}
+  Object.assign(x,{bed,up,sleep,wake:wake||0,eff:Math.round(sleep/total*100),sleepManual:true});
+  save();$('#sheet').hidden=true;pickData();render();toast('Schlaf gespeichert: '+hm(sleep)+' h')}
+function resetSleep(k){const x=store.daily[k];if(!x||!x.sleepOrig)return;const o=x.sleepOrig;
+  ['bed','up','sleep','deep','rem','light','wake','eff'].forEach(f=>{if(o[f]==null)delete x[f];else x[f]=o[f]});if(o.list)store.sleep[k]=o.list;
+  delete x.sleepOrig;delete x.sleepManual;save();$('#sheet').hidden=true;pickData();render();toast('Garmin-Werte wiederhergestellt')}
+
 /* ---------- Blätter ---------- */
 function openSheet(title,body){$('#sheetBox').innerHTML=`<div class="sheet-h"><span></span><span>${title}</span><button data-act="close" aria-label="Schließen">${I.x}</button></div>${body}`;$('#sheet').hidden=false}
 function sheetHealth(k){const h=healthOf(k);
@@ -1100,6 +1125,9 @@ function act(a,el){
   else if(a==='montog'){const m=pMon();m.on=m.on===false;save();render()}
   else if(a==='pushcopy'){const t=cfgString();const done=()=>toast('Schlüssel kopiert');
     try{navigator.clipboard.writeText(t).then(done,()=>{const x=$('#pushcfg');if(x){x.select();x.setSelectionRange(0,99999)}toast('Text markiert: jetzt Kopieren tippen')})}catch(e){const x=$('#pushcfg');if(x){x.select()}}}
+  else if(a==='sleepedit')sheetSleep(cur);
+  else if(a==='sleepsave')saveSleep(el.dataset.k);
+  else if(a==='sleepreset')resetSleep(el.dataset.k);
   else if(a==='togglegarmin'){store.hideGarmin=!store.hideGarmin;save();render()}
   else if(a==='entry'){entryDate=el.dataset.d||(store.real&&cur&&store.daily[cur]?cur:iso(new Date()));go('eintragen')}
   else if(a==='addw'){const k=saveEntry(true),dur=n($('#a_dur').value),avg=n($('#a_avg').value),[h,m]=($('#a_start').value||'17:00').split(':').map(Number);
