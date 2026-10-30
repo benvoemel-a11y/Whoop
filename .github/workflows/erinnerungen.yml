@@ -1,9 +1,8 @@
 name: Erinnerungen
 # Bene
+# Alt: Erinnerungen laufen jetzt über Supabase (Funktion whoop-push, jede Minute).
+# Dieser Workflow ist nur noch von Hand startbar.
 on:
-  schedule:
-    # Alle 15 Minuten; das Skript prüft selbst, welche Erinnerung in Berlin gerade fällig ist.
-    - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       mode:

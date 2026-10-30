@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793360392";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793373272";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -958,12 +958,23 @@ const DEF_REM=()=>[{t:'07:00',title:'Guten Morgen',body:'Deine Werte der Nacht s
 const DEF_MON=()=>({day:1,t:'10:00',on:true});
 const pRem=()=>store.pushRem||(store.pushRem=DEF_REM());const pMon=()=>store.pushMon||(store.pushMon=DEF_MON());
 function cfgString(){if(!store.push)return '';return JSON.stringify(Object.assign(JSON.parse(store.push),{rem:pRem(),mon:pMon()}))}
-function pushDirty(){if(!store.pushSaved)return true;if(store.pushSavedCfg)return cfgString()!==store.pushSavedCfg;return JSON.stringify(pRem())!==JSON.stringify(DEF_REM())||JSON.stringify(pMon())!==JSON.stringify(DEF_MON())}
-function pushSub(){if(!store.push)return 'Erinnerungen zu deinen Wunschzeiten';const on=pRem().filter(r=>r.on!==false).length+' Erinnerungen';return pushDirty()?'Änderung noch nicht auf GitHub gespeichert':'Aktiv · '+on}
+const SB_URL='https://wjbvodjiqjtlezuzgrzn.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqYnZvZGppcWp0bGV6dXpncnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMjk5NDAsImV4cCI6MjEwODcwNTk0MH0.hk7c23aKSk_O8bUMJoL2ActBDHpAdOgxZI9K_0bvEyM';
+const rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
+function pushIds(){if(!store.pushId){store.pushId=crypto.randomUUID?crypto.randomUUID():([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));store.pushTok=rnd(32);save()}return{id:store.pushId,token:store.pushTok}}
+const sbPost=(path,body)=>fetch(SB_URL+path,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify(body)});
+let pushBusy=false,pushErr=false,pushT=null;
+async function pushSync(){if(!store.push)return;const cfg=cfgString();if(cfg===store.pushSynced){pushErr=false;return}
+  pushBusy=true;try{const{id,token}=pushIds();let tz='Europe/Berlin';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||tz}catch(e){}
+    const r=await sbPost('/rest/v1/rpc/whoop_save',{p_id:id,p_token:token,p_cfg:JSON.parse(cfg),p_tz:tz});const ok=r.ok&&(await r.json())===true;
+    if(ok){store.pushSynced=cfg;pushErr=false;save()}else pushErr=true}catch(e){pushErr=true}
+  pushBusy=false;updPushSub()}
+function pushSyncSoon(){clearTimeout(pushT);pushT=setTimeout(pushSync,600)}
+function updPushSub(){const x=document.querySelector('.grp[data-g=push] summary small');if(x)x.textContent=pushSub()}
+function pushSub(){if(!store.push)return 'Erinnerungen zu deinen Wunschzeiten';const on=pRem().filter(r=>r.on!==false).length+' Erinnerungen';
+  if(cfgString()!==store.pushSynced)return pushErr?'Nicht gespeichert · keine Verbindung':'Wird gespeichert …';return 'Aktiv · '+on}
 function pushBody(){
   if(!pushOk())return `<p class="about" style="margin-top:0">Benachrichtigungen funktionieren nur, wenn du die App über das Icon auf dem Home-Bildschirm öffnest (ab iOS 16.4). In Safari selbst geht es nicht.</p>`;
   if(!store.push)return `<p class="about" style="margin-top:0">Die App erinnert dich um <b>7, 14 und 22 Uhr</b> ans Importieren und am <b>1. jedes Monats</b> an deinen Withings-Bericht.</p><button class="btn w" data-act="pushon">BENACHRICHTIGUNGEN AKTIVIEREN</button><div class="msg" id="pmsg" role="status"></div>`;
-  const dirty=pushDirty(),first=!store.pushSaved;
   const rows=pRem().map((r,i)=>`<div class="remrow"><div class="remtop"><input type="time" id="rt-${i}" value="${esc(r.t)}" aria-label="Uhrzeit"><button class="tog mini-tog" data-act="remtog" data-i="${i}" aria-pressed="${r.on!==false}" aria-label="Ein oder aus"><span class="sw"></span></button><button class="rm" data-act="remdel" data-i="${i}" aria-label="Erinnerung löschen">${I.x}</button></div>
     <div class="wdays" role="group" aria-label="Wochentage">${['Mo','Di','Mi','Do','Fr','Sa','So'].map((d,j)=>`<button class="wd" data-act="remday" data-i="${i}" data-d="${j+1}" aria-pressed="${!r.days||!r.days.length||r.days.includes(j+1)}">${d}</button>`).join('')}</div>
     <input id="rtt-${i}" value="${esc(r.title)}" placeholder="Titel" maxlength="40" aria-label="Titel"><input id="rtb-${i}" value="${esc(r.body)}" placeholder="Text" maxlength="120" aria-label="Text"></div>`).join('');
@@ -972,17 +983,7 @@ function pushBody(){
     <button class="btn g" data-act="remadd">+ ERINNERUNG HINZUFÜGEN</button>
     <div class="sec"><span>Withings-Bericht</span></div>
     <div class="remrow"><div class="remtop"><label for="mday" style="font-size:13px;color:var(--muted)">Am</label><input id="mday" inputmode="numeric" value="${mo.day}" style="width:56px" aria-label="Tag im Monat"><label for="mt" style="font-size:13px;color:var(--muted)">. um</label><input type="time" id="mt" value="${esc(mo.t)}" aria-label="Uhrzeit"><button class="tog mini-tog" data-act="montog" aria-pressed="${mo.on!==false}" aria-label="Ein oder aus"><span class="sw"></span></button></div></div>`;
-  if(!dirty)return editor+`<p class="about">Alles gespeichert. Nach einer Änderung hier musst du den Schlüssel einmal neu bei GitHub einfügen.</p><button class="btn warn" data-act="pushoff">BENACHRICHTIGUNGEN AUSSCHALTEN</button><div class="msg" id="pmsg" role="status"></div>`;
-  if(!first)return editor+`<div class="savebox"><b>Änderung speichern</b><ol class="steps-list" style="margin-top:8px">
-    <li><button class="btn w" data-act="pushcopy" style="margin-top:0">SCHLÜSSEL KOPIEREN</button><textarea id="pushcfg" readonly class="cfgbox" aria-label="Schlüssel">${esc(cfgString())}</textarea></li>
-    <li><a class="lnk" href="https://github.com/benvoemel-a11y/Whoop/settings/secrets/actions/PUSH_CONFIG" target="_blank" rel="noopener">PUSH_CONFIG auf GitHub öffnen</a> → ins Feld <b>Value</b> tippen, alles löschen, einfügen → <b>Update secret</b>.</li></ol>
-    <button class="btn g" data-act="pushsaved">ERLEDIGT, IST GESPEICHERT</button></div>
-    <button class="btn warn" data-act="pushoff">BENACHRICHTIGUNGEN AUSSCHALTEN</button><div class="msg" id="pmsg" role="status"></div>`;
-  return editor+`<div class="sec"><span>Einrichtung</span></div><ol class="steps-list" style="margin-top:0">
-    <li><b>Schlüssel kopieren:</b><button class="btn w" data-act="pushcopy" style="margin-top:8px">SCHLÜSSEL KOPIEREN</button><textarea id="pushcfg" readonly class="cfgbox" aria-label="Schlüssel">${esc(cfgString())}</textarea></li>
-    <li><b>Auf GitHub speichern:</b> <a class="lnk" href="https://github.com/benvoemel-a11y/Whoop/settings/secrets/actions/new" target="_blank" rel="noopener">diesen Link öffnen</a>, bei <b>Name</b> <code class="cmd">PUSH_CONFIG</code> eintragen, bei <b>Secret</b> einfügen, <b>Add secret</b> tippen.</li>
-    <li><b>Testen:</b> <a class="lnk" href="https://github.com/benvoemel-a11y/Whoop/actions/workflows/erinnerungen.yml" target="_blank" rel="noopener">diesen Link öffnen</a> → <b>Run workflow</b> → grüner Knopf <b>Run workflow</b>. Nach ca. 1 Minute kommt „Test“ aufs Handy.</li></ol>
-    ${store.pushSaved?'':'<button class="btn g" data-act="pushsaved">ERLEDIGT, IST GESPEICHERT</button>'}
+  return editor+`<p class="about">Änderungen werden automatisch gespeichert.</p><button class="btn g" data-act="pushtest">TEST-BENACHRICHTIGUNG SENDEN</button>
     <button class="btn warn" data-act="pushoff">BENACHRICHTIGUNGEN AUSSCHALTEN</button><div class="msg" id="pmsg" role="status"></div>`}
 const b64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 async function pushOn(){const m=()=>$('#pmsg'),say=(t,err)=>{const x=m();if(x){x.className='msg'+(err?' err':'');x.textContent=t}};
@@ -992,10 +993,13 @@ async function pushOn(){const m=()=>$('#pmsg'),say=(t,err)=>{const x=m();if(x){x
     const kp=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign']);
     const jwk=await crypto.subtle.exportKey('jwk',kp.privateKey),raw=await crypto.subtle.exportKey('raw',kp.publicKey);
     const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:new Uint8Array(raw)});
-    store.push=JSON.stringify({sub:sub.toJSON(),pub:b64u(raw),priv:jwk.d});store.pushSaved=false;store.pushSavedCfg=null;save();moreOpen.add('push');render();toast('Erlaubt. Jetzt Schlüssel kopieren.')}
+    store.push=JSON.stringify({sub:sub.toJSON(),pub:b64u(raw),priv:jwk.d});store.pushSynced=null;save();moreOpen.add('push');render();await pushSync();render();toast(pushErr?'Erlaubt, aber Speichern hat nicht geklappt':'Benachrichtigungen sind an')}
   catch(e){say('Das hat nicht geklappt: '+(e&&e.message||e)+'. Öffne die App über das Icon auf dem Home-Bildschirm.',1)}}
 async function pushOff(){try{const reg=await navigator.serviceWorker.getRegistration();const sub=reg&&await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe()}catch(e){}
-  store.push=null;store.pushSaved=false;store.pushSavedCfg=null;save();render();toast('Benachrichtigungen aus')}
+  if(store.pushId)sbPost('/rest/v1/rpc/whoop_delete',{p_id:store.pushId,p_token:store.pushTok}).catch(()=>{});
+  store.push=null;store.pushSynced=null;save();render();toast('Benachrichtigungen aus')}
+async function pushTest(){if(cfgString()!==store.pushSynced)await pushSync();if(pushErr){toast('Keine Verbindung');return}
+  try{const r=await sbPost('/functions/v1/whoop-push',{type:'test',id:store.pushId,token:store.pushTok});const j=await r.json().catch(()=>({}));toast(j.sent?'Test gesendet, kommt gleich':'Test hat nicht geklappt')}catch(e){toast('Keine Verbindung')}}
 function vMore(){const nd=Object.keys(store.daily||{}).length;
   return `<div class="morehead"><span class="avatar big" style="background:${avc()};color:${avtx(avc())}">${esc((store.name||'B')[0].toUpperCase())}</span><span class="dtx"><b style="font-size:20px">${esc(store.name||'Bene')}</b><span>${store.real?nd+' Tage mit eigenen Daten':'Beispieldaten aktiv'}</span></span></div>
   ${grp('profil','Profil','Name, Alter, Farbe, Schlafbedarf',`
@@ -1136,15 +1140,13 @@ function act(a,el){
   else if(a==='avcol'){store.avColor=el.dataset.c;save();render()}
   else if(a==='pushon')pushOn();
   else if(a==='pushoff')pushOff();
-  else if(a==='pushsaved'){store.pushSaved=true;store.pushSavedCfg=cfgString();save();render();toast('Gespeichert')}
-  else if(a==='remadd'){pRem().push({t:'09:00',title:'Erinnerung',body:'',url:'./#home',on:true});save();render()}
+  else if(a==='pushtest')pushTest();
+  else if(a==='remadd'){pRem().push({t:'09:00',title:'Erinnerung',body:'',url:'./#home',on:true});save();pushSyncSoon();render()}
   else if(a==='remday'){const r=pRem()[+el.dataset.i],d=+el.dataset.d;let ds=r.days&&r.days.length?r.days.slice():[1,2,3,4,5,6,7];
-    ds=ds.includes(d)?ds.filter(x=>x!==d):[...ds,d].sort();if(!ds.length){toast('Mindestens ein Tag');return}r.days=ds.length===7?[]:ds;save();render()}
-  else if(a==='remdel'){pRem().splice(+el.dataset.i,1);save();render()}
-  else if(a==='remtog'){const r=pRem()[+el.dataset.i];r.on=r.on===false;save();render()}
-  else if(a==='montog'){const m=pMon();m.on=m.on===false;save();render()}
-  else if(a==='pushcopy'){const t=cfgString();const done=()=>toast('Schlüssel kopiert');
-    try{navigator.clipboard.writeText(t).then(done,()=>{const x=$('#pushcfg');if(x){x.select();x.setSelectionRange(0,99999)}toast('Text markiert: jetzt Kopieren tippen')})}catch(e){const x=$('#pushcfg');if(x){x.select()}}}
+    ds=ds.includes(d)?ds.filter(x=>x!==d):[...ds,d].sort();if(!ds.length){toast('Mindestens ein Tag');return}r.days=ds.length===7?[]:ds;save();pushSyncSoon();render()}
+  else if(a==='remdel'){pRem().splice(+el.dataset.i,1);save();pushSyncSoon();render()}
+  else if(a==='remtog'){const r=pRem()[+el.dataset.i];r.on=r.on===false;save();pushSyncSoon();render()}
+  else if(a==='montog'){const m=pMon();m.on=m.on===false;save();pushSyncSoon();render()}
   else if(a==='sleepedit')sheetSleep(cur);
   else if(a==='sleepsave')saveSleep(el.dataset.k);
   else if(a==='sleepreset')resetSleep(el.dataset.k);
@@ -1168,14 +1170,14 @@ function act(a,el){
   else if(a==='mine'){store.real=true;save();cur=null;pickData();render()}
   else if(a==='wipe1')sheetWipe(1);
   else if(a==='wipe2')sheetWipe(2);
-  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,hideGarmin:store.hideGarmin,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
+  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,hideGarmin:store.hideGarmin,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-act]');if(!t)return;if(t.dataset.go){$('#sheet').hidden=true;go(t.dataset.go)}else act(t.dataset.act,t)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('#sheet').hidden=true});
 document.addEventListener('change',async e=>{
-  {const id=e.target.id,mm=/^(rt|rtt|rtb)-(\d+)$/.exec(id||'');if(mm){const r=pRem()[+mm[2]];if(r){const v=e.target.value.trim();if(mm[1]==='rt'&&v)r.t=v;if(mm[1]==='rtt')r.title=v||'Erinnerung';if(mm[1]==='rtb')r.body=v;r.url=r.url||'./#home';save();render()}return}
-   if(id==='mday'){const v=Math.round(n(e.target.value));if(v>=1&&v<=28){pMon().day=v;save()}render();return}
-   if(id==='mt'&&e.target.value){pMon().t=e.target.value;save();render();return}}
+  {const id=e.target.id,mm=/^(rt|rtt|rtb)-(\d+)$/.exec(id||'');if(mm){const r=pRem()[+mm[2]];if(r){const v=e.target.value.trim();if(mm[1]==='rt'&&v)r.t=v;if(mm[1]==='rtt')r.title=v||'Erinnerung';if(mm[1]==='rtb')r.body=v;r.url=r.url||'./#home';save();pushSyncSoon();render()}return}
+   if(id==='mday'){const v=Math.round(n(e.target.value));if(v>=1&&v<=28){pMon().day=v;save();pushSyncSoon()}render();return}
+   if(id==='mt'&&e.target.value){pMon().t=e.target.value;save();pushSyncSoon();render();return}}
   if(e.target.id==='e_date'){entryDate=e.target.value;render();return}
   if(e.target.id==='need'){const v=n(e.target.value);if(v&&v>=5&&v<=11){store.need=v;save();pickData();toast('Schlafbedarf gespeichert')}}
   else if(e.target.id==='age'){const v=n(e.target.value);if(v&&v>=10&&v<=100){store.age=Math.round(v);save();pickData();render();toast('Alter gespeichert')}}
@@ -1203,6 +1205,7 @@ addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v
 
 load();const h0=fromHash(location.hash.slice(1));if(h0)view=h0;
 pickData();render();
+setTimeout(pushSync,1500);addEventListener('online',pushSync);
 })();
 </script>
 
