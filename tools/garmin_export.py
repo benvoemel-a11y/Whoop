@@ -120,6 +120,15 @@ def day(g, d):
     if rec is None:
         rec = st.get("bodyBatteryAtWakeTime") or st.get("bodyBatteryHighestValue")
     out["rec"] = rec
+
+    mm = safe(g.get_max_metrics, d)
+    if isinstance(mm, list):
+        mm = mm[0] if mm else {}
+    if isinstance(mm, dict):
+        gen = mm.get("generic") or {}
+        vo2 = gen.get("vo2MaxPreciseValue") or gen.get("vo2MaxValue")
+        if vo2:
+            out["vo2"] = round(float(vo2), 1)
     return {k: v for k, v in out.items() if v is not None}, levels
 
 
@@ -163,7 +172,10 @@ def main():
         rec.update(weights.pop(rec["date"], {}))
     days += [{"date": d, **v} for d, v in weights.items()]
 
-    data = {"app": "whoop-by-me", "source": "garmin", "created": dt.datetime.now().isoformat(timespec="seconds"),
+    fa = safe(g.get_fitnessage_data, today.isoformat()) or {}
+    fitness_age = fa.get("fitnessAge") if isinstance(fa, dict) else None
+
+    data = {"app": "whoop-by-me", "fitnessAge": round(fitness_age, 1) if fitness_age else None, "source": "garmin", "created": dt.datetime.now().isoformat(timespec="seconds"),
             "days": days, "sleep": sleep, "workouts": workouts}
     icloud = Path("~/Library/Mobile Documents/com~apple~CloudDocs").expanduser()
     folder = icloud / "Whoop" if icloud.exists() else Path("~/Downloads").expanduser()

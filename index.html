@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793326059";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793326267";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -249,6 +249,13 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .wrow span:first-child{color:var(--muted);font-size:14px}
 .wrow b{font-size:18px;font-weight:600}
 .wrow span:last-child{color:var(--muted);text-align:right;font-size:14px}
+.agec{display:flex;align-items:center;gap:14px;width:100%;background:var(--card);border-radius:16px;padding:14px 16px;margin-top:12px}
+.agec .dtx b{font-size:13px;font-weight:800;letter-spacing:.1em}
+.agev{font-size:30px;font-weight:600}
+.pace{position:relative;height:28px;margin:6px 4px 0;background:repeating-linear-gradient(90deg,#6e7981 0 2px,transparent 2px 7px);border-radius:3px}
+.pace i{position:absolute;top:-6px;bottom:-6px;width:4px;margin-left:-2px;border-radius:2px;background:#fff}
+.impb{margin-left:auto;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:var(--card);font-size:11px;font-weight:800;letter-spacing:.08em;cursor:pointer}
+.impb svg{width:16px;height:16px}
 .prompt-w{position:relative}
 .prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
 .prompt-x svg{width:16px;height:16px}
@@ -384,6 +391,8 @@ const I={
   restore:sv('<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/><circle cx="12" cy="12" r="2.5"/>'),
   sun:sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>'),
   watch:sv('<rect x="6" y="6" width="12" height="12" rx="6"/><path d="M9 6l.8-3h4.4l.8 3M9 18l.8 3h4.4l.8-3M12 9v3l2 1.5"/>'),
+  imp:sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  age:sv('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
   strap:sv('<rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6V3h6v3M9 18v3h6v-3"/>'),
   info:sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5" stroke-width="2.4"/>'),
   pulse:sv('<path d="M3 12h4l2-4 4 8 2-4h6"/>'),
@@ -586,6 +595,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.k
     <button class="dial" data-go="belastung" aria-label="Belastung ${fmt(x.strain,1)}">${ring(x.strain==null?0:x.strain/21,'var(--strain)',{inner:rtext(110,fmt(x.strain,1),'',30)})}<span class="dlab">BELASTUNG ${I.chev}</span></button>
   </div>
   ${monitors(k)}
+  ${ageCard(k)}
   <div class="h-row"><h2 class="h1">Mein Tag</h2><button class="plus" data-go="logbuch" aria-label="Logbuch ausfüllen">${I.plus}</button></div>
   <button class="outlook" data-go="ausblick">${I.sun}<span>Täglicher Ausblick</span><span class="chev">${I.chev}</span></button>
   ${acts(k)}
@@ -747,7 +757,7 @@ function lastBody(k,f){const ds=days().filter(x=>x<=k&&f(x)!=null);return ds.len
 function vMetric(key,k){const body=BODY.includes(key),m=MET[key]||MET.hrv;let range=body?mRange:(mRange||30);
   if(range===0){const ds=days().filter(x=>x<=k&&m.f(x)!=null);const first=ds[0]||k;range=Math.max(7,Math.round((fromIso(k)-fromIso(first))/864e5)+1)}
   const keys=Array.from({length:range},(_,i)=>shift(k,i-range+1)),vals=keys.map(x=>data.daily[x]?m.f(x):null),valid=vals.filter(v=>v!=null),lk=body?lastBody(k,m.f):k,v=lk?m.f(lk):null,a=mean(hist(m.f,k)),ra=mean(valid);
-  return `<div class="mhead"><span class="mic">${I[m.ic]}</span><h2>${m.n}</h2></div>
+  return `<div class="mhead"><span class="mic">${I[m.ic]}</span><h2>${m.n}</h2>${body?`<label class="impb" for="file" aria-label="Withings importieren">${I.imp}<span>WITHINGS</span></label>`:''}</div>
   <div class="mbig"><b class="num">${v==null?'–':m.v(v)}</b><span>${m.u||''}</span></div>
   <p class="jsub">${body&&lk&&lk!==k?'Letzte Messung: '+fromIso(lk).toLocaleDateString('de-DE',{day:'numeric',month:'long'})+' · ':''}Schnitt der letzten 30 Tage: <b class="num" style="color:var(--fg)">${a==null?'–':m.v(a)}</b> ${m.u||''}</p>
   <div class="seg"><button data-act="mrange" data-r="7" aria-pressed="${mRange===7}">7 TAGE</button><button data-act="mrange" data-r="30" aria-pressed="${mRange===30}">30 TAGE</button>${body?`<button data-act="mrange" data-r="0" aria-pressed="${mRange===0}">ALLE</button>`:''}</div>
@@ -837,10 +847,47 @@ function vDevices(){const ds=store.devices||{},list=Object.keys(ds);
 const AVC=[['#43d3c0','Türkis'],['#3fdd85','Grün'],['#0093e7','Blau'],['#7ba1bb','Graublau'],['#9b6cf3','Lila'],['#e67cf0','Pink'],['#ff4d5a','Rot'],['#f5a33a','Orange'],['#ffde00','Gelb'],['#f2f4f5','Weiß'],['#6e7981','Grau'],['#1d2328','Schwarz']];
 const avc=()=>store.avColor||'#43d3c0';
 const avtx=c=>{const h=c.replace('#',''),r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return (r*299+g*587+b*114)/1000>150?'#101418':'#ffffff'};
+function bioAge(k,off=0){const A=n(store.age);if(!A)return null;const end=shift(k,-off),ks=Array.from({length:30},(_,i)=>shift(end,i-29)).filter(x=>data.daily[x]);
+  if(ks.length<5)return null;const mv=f=>mean(ks.map(f).filter(v=>v!=null)),parts=[];
+  const add=(l,val,show,d)=>{if(val!=null&&isFinite(d))parts.push([l,show,+d.toFixed(1)])};
+  const rhr=mv(x=>D(x).rhr);add('Ruhepuls',rhr,fmt(rhr)+' bpm',clamp((rhr-60)*0.15,-4,4));
+  const hrv=mv(x=>D(x).hrv),norm=70-0.8*A;add('HRV',hrv,fmt(hrv)+' ms',clamp(-(hrv-norm)*0.08,-4,4));
+  const st=mv(x=>D(x).steps);add('Schritte',st,fmt(st),clamp(-(st-8000)/1000*0.4,-3,3));
+  const sl=mv(x=>D(x).sleep);if(sl!=null){const h=sl/60;add('Schlafdauer',sl,hm(sl)+' h',h<7?clamp((7-h)*1.2,0,3):h>9.5?clamp((h-9.5)*0.5,0,2):-0.5*Math.min(1,h-7))}
+  const wk=data.workouts.filter(w=>ks.includes(w.date)).length/(ks.length/7);add('Training pro Woche',wk,fmt(wk,1)+'×',clamp(-(wk-2)*0.5,-1.5,1.5));
+  const lf=lastBody(k,x=>D(x).fat),fat=lf?D(lf).fat:null;if(fat!=null)add('Körperfett',fat,fmt(fat,1)+' %',fat>22?clamp((fat-22)*0.2,0,3):fat<8?clamp((8-fat)*0.2,0,2):-0.3);
+  const age=A+parts.reduce((s2,p)=>s2+p[2],0);return{A,age:+age.toFixed(1),parts,days:ks.length}}
+function pace(k){const a=bioAge(k),b=bioAge(k,30);if(!a||!b)return null;return +clamp(1+(a.age-b.age)*1.2,-1,3).toFixed(1)}
+function ageCard(k){const b=bioAge(k);
+  if(!store.age)return `<button class="agec" data-go="alter"><span class="dic">${I.age}</span><span class="dtx"><b>KÖRPERALTER</b><span>Trag dein Alter ein, um es zu sehen</span></span><span class="dch">${I.chev}</span></button>`;
+  if(!b)return `<button class="agec" data-go="alter"><span class="dic">${I.age}</span><span class="dtx"><b>KÖRPERALTER</b><span>Braucht mindestens 5 Tage mit Werten</span></span><span class="dch">${I.chev}</span></button>`;
+  const d=+(b.A-b.age).toFixed(1);
+  return `<button class="agec" data-go="alter"><span class="dic">${I.age}</span><span class="dtx"><b>KÖRPERALTER</b><span style="color:${d>=0?'var(--mint)':'var(--red)'}">${fmt(Math.abs(d),1)} Jahre ${d>=0?'jünger':'älter'}</span></span><b class="num agev">${fmt(b.age,1)}</b><span class="dch">${I.chev}</span></button>`}
+function vAge(k){const b=bioAge(k),p=pace(k);
+  if(!store.age)return `<h2 class="jtitle">Körperalter</h2><p class="jsub">Dein Körperalter wird mit deinem echten Alter verglichen. Trag es hier ein:</p>
+    <div class="field"><label for="age">Alter (Jahre)</label><input id="age" inputmode="numeric" placeholder="z. B. 25"></div>`;
+  if(!b)return `<h2 class="jtitle">Körperalter</h2><p class="jsub">Für eine Schätzung braucht die App mindestens 5 Tage mit Werten aus den letzten 30 Tagen.</p>`;
+  const d=+(b.A-b.age).toFixed(1),S=260,c=S/2;
+  const dots=Array.from({length:70},(_,i)=>{const a=i*2.39996,r=86+((i*37)%30),x=c+Math.cos(a)*r,y=c+Math.sin(a)*r,s=1.5+((i*13)%4);return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s}" fill="${i%3?'#4fe39b':'#5aa6e8'}" opacity="${(.35+((i*7)%6)/10).toFixed(2)}"/>`}).join('');
+  const px=p==null?null:(p+1)/4*100;
+  return `<div class="bigring"><svg viewBox="0 0 ${S} ${S}" role="img" aria-label="Körperalter ${fmt(b.age,1)}">
+    <defs><radialGradient id="ag" cx="50%" cy="50%" r="50%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset=".85" stop-color="#2a8f6a" stop-opacity=".55"/><stop offset="1" stop-color="#2d6f95" stop-opacity=".9"/></radialGradient></defs>
+    <circle cx="${c}" cy="${c}" r="${c-6}" fill="url(#ag)"/>${dots}
+    <text x="${c}" y="${c+8}" text-anchor="middle" fill="#fff" font-family="Barlow,sans-serif" font-weight="600" font-size="62">${fmt(b.age,1)}</text>
+    <text x="${c}" y="${c+36}" text-anchor="middle" fill="#a2acb3" font-family="Figtree,sans-serif" font-weight="800" font-size="13" letter-spacing="2">KÖRPERALTER</text>
+    <text x="${c}" y="${c+62}" text-anchor="middle" fill="${d>=0?'#4fe39b':'#ff4d5a'}" font-family="Figtree,sans-serif" font-weight="600" font-size="15">${fmt(Math.abs(d),1)} Jahre ${d>=0?'jünger':'älter'}</text></svg></div>
+  <div class="sec"><span>Alterungstempo</span><span>${p==null?'':fmt(p,1)+'×'}</span></div>
+  ${p==null?'<p class="hint">Für das Tempo braucht die App zusätzlich Werte aus den 30 Tagen davor.</p>':`<div class="pace"><i style="left:${px}%"></i></div><div class="sbar-l num"><span>−1,0×</span><span>1,0×</span><span>3,0×</span></div>
+  <p class="op" style="margin:12px 2px 0">${p<0.8?'Du alterst gerade langsamer als die Zeit vergeht. Deine Werte haben sich verbessert.':p<=1.2?'Du alterst ungefähr im normalen Tempo.':'Du alterst gerade schneller. Deine Werte waren im letzten Monat schlechter als davor.'}</p>`}
+  <div class="sec"><span>Was es beeinflusst</span><span>Ø ${b.days} Tage</span></div>
+  ${b.parts.map(([l,sh,dd])=>`<div class="mrow" style="grid-template-columns:minmax(0,1fr) auto auto"><span class="mlbl">${l}</span><span class="num" style="color:var(--muted);font-size:16px">${sh}</span><b class="num" style="font-size:20px;min-width:70px;text-align:right;color:${dd<=0?'var(--mint)':'var(--red)'}">${dd>0?'+':dd<0?'−':'±'}${fmt(Math.abs(dd),1)} J</b></div>`).join('')}
+  <p class="about" style="margin-top:16px">Eine Schätzung aus deinen Durchschnittswerten der letzten 30 Tage, verglichen mit typischen Werten für dein Alter (${b.A}). Keine medizinische Aussage. Mit Whoop-Daten wird sie genauer als mit Garmin-Werten.</p>
+  <div class="field"><label for="age">Dein Alter</label><input id="age" inputmode="numeric" value="${b.A}"></div>`}
 function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</span></div>
   <div class="avrow"><span class="avatar big" style="background:${avc()};color:${avtx(avc())}">${esc((store.name||'B')[0].toUpperCase())}</span>
     <div class="swatches" role="radiogroup" aria-label="Farbe des Profilbilds">${AVC.map(([c,n])=>`<button class="sw-c" role="radio" aria-checked="${avc()===c}" aria-label="${n}" data-act="avcol" data-c="${c}" style="background:${c}"></button>`).join('')}</div></div>
   <label class="btn g" for="file" style="margin-top:10px">WITHINGS IMPORTIEREN</label>
+  <div class="field"><label for="age">Alter</label><input id="age" inputmode="numeric" value="${esc(store.age||'')}" placeholder="Jahre"></div>
   <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
   <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>
   <button class="tog" data-act="togglegarmin" aria-pressed="${!store.hideGarmin}" style="width:100%;margin-top:24px"><span>Garmin-Bereich anzeigen</span><span class="sw"></span></button>
@@ -892,7 +939,7 @@ function sheetOutlook(k){const x=D(k),t=target(x.rec),ni=nightInfo(k),nn=need(sh
 
 /* ---------- Kopf, Leiste, Steuerung ---------- */
 const DETAIL={ueberblick:'ÜBERBLICK',schlaf:'SCHLAF',erholung:'ERHOLUNG',belastung:'BELASTUNG'};
-const SUB=['logbuch','ausblick','metric','eintragen','geraete'];const MAIN=['home','trends','mehr'];
+const SUB=['logbuch','ausblick','metric','eintragen','geraete','alter'];const MAIN=['home','trends','mehr'];
 const TT={belastung:'BELASTUNG',erholung:'ERHOLUNG',schlaf:'SCHLAF'};
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])}
 function dayLabel(k){const t=iso(new Date());return k===t?'HEUTE':k===shift(t,-1)?'GESTERN':fromIso(k).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()}
@@ -914,11 +961,12 @@ function navHtml(){const it=[['home','Startseite','home'],['ueberblick','Überbl
   return it.map(([v,l,ic])=>`<button data-go="${v}" ${act===v?'aria-current="page"':''}>${I[ic]}<span>${l}</span></button>`).join('')}
 function render(){
   $('#head').innerHTML=head();$('#nav').innerHTML=navHtml();
-  const V={home:()=>vHome(cur),ueberblick:()=>vOverview(cur),schlaf:()=>vSleep(cur),erholung:()=>vRec(cur),belastung:()=>vStrain(cur),trends:vTrends,logbuch:()=>vJournal(cur),mehr:vMore,ausblick:()=>vOutlook(cur),metric:()=>vMetric(metricKey,cur),eintragen:vEntry,geraete:vDevices};
+  const V={home:()=>vHome(cur),ueberblick:()=>vOverview(cur),schlaf:()=>vSleep(cur),erholung:()=>vRec(cur),belastung:()=>vStrain(cur),trends:vTrends,logbuch:()=>vJournal(cur),mehr:vMore,ausblick:()=>vOutlook(cur),metric:()=>vMetric(metricKey,cur),eintragen:vEntry,geraete:vDevices,alter:()=>vAge(cur)};
   $('#view').innerHTML=(V[view]||V.home)();
 }
 function pickData(){data=store.real&&Object.keys(store.daily).length?store:demo();const ds=days();if(!ds.includes(cur))cur=ds[ds.length-1];if(trendEnd&&!ds.includes(trendEnd))trendEnd=null}
-function go(v){if(!SUB.includes(view))prevView=view;view=v;editDash=false;jEdit=false;const h=v==='metric'?'m-'+metricKey:v;if(location.hash!=='#'+h){try{history.replaceState(null,'','#'+h)}catch(e){location.hash=h}}render();window.scrollTo(0,0)}
+const scrollMem={};
+function go(v,restore){scrollMem[view]=window.scrollY;if(!SUB.includes(view))prevView=view;view=v;editDash=false;jEdit=false;const h=v==='metric'?'m-'+metricKey:v;if(location.hash!=='#'+h){try{history.replaceState(null,'','#'+h)}catch(e){location.hash=h}}render();const y=restore?(scrollMem[v]||0):0;window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y))}
 function addQ(t,cat){t=String(t||'').trim();if(!t)return;store.customQ=store.customQ||[];if(store.customQ.some(c=>c.t.toLowerCase()===t.toLowerCase())){toast('Diese Frage gibt es schon');return}
   const q=t.endsWith('?')?t:t+'?',c=cat&&CATS.includes(cat)?cat:autoCat(q);store.customQ.push({id:'c'+Date.now().toString(36),t:q,cat:c});save();if(data!==store)data.customQ=store.customQ;render();toast('Hinzugefügt unter '+c[0]+c.slice(1).toLowerCase())}
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),1800)}
@@ -930,7 +978,7 @@ function act(a,el){
   else if(a==='ttab'){trendTab=el.dataset.t;render()}
   else if(a==='stage'){stageSel=el.dataset.st;render()}
   else if(a==='health')sheetHealth(cur);else if(a==='stress')sheetStress(cur);
-  else if(a==='back')go(prevView||'home');
+  else if(a==='back')go(prevView||'home',true);
   else if(a==='metric'){metricKey=el.dataset.k;go('metric')}
   else if(a==='mrange'){mRange=+el.dataset.r;render()}
   else if(a==='addq'){const i=$('#newq'),c=$('#newcat');addQ(i&&i.value,c&&c.value)}
@@ -967,6 +1015,7 @@ $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('#sheet').hi
 document.addEventListener('change',async e=>{
   if(e.target.id==='e_date'){entryDate=e.target.value;render();return}
   if(e.target.id==='need'){const v=n(e.target.value);if(v&&v>=5&&v<=11){store.need=v;save();pickData();toast('Schlafbedarf gespeichert')}}
+  else if(e.target.id==='age'){const v=n(e.target.value);if(v&&v>=10&&v<=100){store.age=Math.round(v);save();pickData();render();toast('Alter gespeichert')}}
   else if(e.target.id==='name'){store.name=e.target.value.trim()||'Bene';save();pickData();render()}
   else if(e.target.id==='file'){const done=[];for(const f of e.target.files){try{const t=await f.text();const r=/^\s*\{/.test(t)?importGarmin(JSON.parse(t)):importRows(parseCSV(t));if(r)done.push(r)}catch(err){}}
     e.target.value='';
