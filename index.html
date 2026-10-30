@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793324853";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793325155";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -676,8 +676,17 @@ const JQ=[['ERHOLUNG',[['cold','Eine kalte Dusche genommen?'],['sauna','In der S
   ['NAHRUNGSERGÄNZUNG',[['creatine','Kreatin eingenommen?']]],
   ['SCHLAF',[['samebed','Im selben Bett wie sonst geschlafen?']]]];
 const SUGG=['Meditiert?','Gedehnt oder Mobility gemacht?','Nach 20 Uhr trainiert?','Zucker gegessen?','Mittagsschlaf gemacht?','Draußen in der Sonne gewesen?','Magnesium genommen?','Krank oder angeschlagen?','Lange am Bildschirm gearbeitet?','Mit Freunden getroffen?','Gelernt oder Prüfungsstress?','Viel gesessen?'];
+const CATS=['ERHOLUNG','TRAINING','ERNÄHRUNG','LIFESTYLE','NAHRUNGSERGÄNZUNG','MENTAL','SCHLAF'];
+const CAT_RULES=[['NAHRUNGSERGÄNZUNG',/magnesium|kreatin|creatin|vitamin|omega|zink|eisen|supplement|tablette|kapsel|ashwa|melatonin|proteinshake|eingenommen/],
+  ['SCHLAF',/schlaf|bett|nacht|nap|aufgewacht|wecker|ins bett/],
+  ['TRAINING',/train|sport|lauf|joggen|gym|fitness|dehn|mobility|stretch|workout|kraft|cardio|rad|schwimm|yoga|spazier|schritte|zone 2|intervall|wettkampf/],
+  ['ERNÄHRUNG',/gegessen|essen|zucker|pizza|wasser|getrunken|obst|gemüse|fast food|fasten|kalorien|protein|süß|snack|frühstück|mittag|abendessen|salz|fleisch|vegan/],
+  ['MENTAL',/meditier|stress|prüfung|gelernt|lernen|gefühlt|angst|stimmung|freunde|atem|dankbar|tagebuch|traurig|glücklich|nervös|energie|motiviert|partner|beziehung/],
+  ['ERHOLUNG',/sauna|kalt|dusche|eisbad|massage|sonne|draußen|krank|erkält|faszien|entspann|pause|urlaub/]];
+const autoCat=t=>{t=String(t).toLowerCase();for(const[c,r]of CAT_RULES)if(r.test(t))return c;return'LIFESTYLE'};
+const qCat=c=>c.cat&&CATS.includes(c.cat)?c.cat:autoCat(c.t);
 const isHid=id=>(store.hiddenQ||[]).includes(id);
-const allQ=()=>[...JQ.flatMap(([,qs])=>qs),...(store.customQ||[]).map(c=>[c.id,c.t])].filter(([id])=>!isHid(id));
+const allQ=()=>CATS.flatMap(g=>[...((JQ.find(x=>x[0]===g)||[0,[]])[1]),...(store.customQ||[]).filter(c=>qCat(c)===g).map(c=>[c.id,c.t])]).filter(([id])=>!isHid(id));
 function qRow(id,t,j,rm){const hid=isHid(id);return `<div class="q${hid?' qhid':''}"><span>${esc(t)}</span><span class="yn">
     ${rm==='hide'?`<button class="hidb${hid?'':' on'}" data-act="hideq" data-q="${id}">${hid?'EINBLENDEN':'AUSBLENDEN'}</button>`:rm?`<button class="hidb${hid?'':' on'}" data-act="hideq" data-q="${id}">${hid?'EINBLENDEN':'AUSBLENDEN'}</button><button class="rm" data-act="rmq" data-q="${id}" aria-label="Frage löschen">${I.x}</button>`:`<button class="no" data-act="yn" data-q="${id}" data-v="0" aria-pressed="${j[id]===0}" aria-label="Nein">${I.x}</button>
     <button class="yes" data-act="yn" data-q="${id}" data-v="1" aria-pressed="${j[id]===1}" aria-label="Ja">${I.check}</button>`}</span></div>
@@ -685,10 +694,11 @@ function qRow(id,t,j,rm){const hid=isHid(id);return `<div class="q${hid?' qhid':
 function vJournal(k){const j=(data.journal&&data.journal[k])||{},cq=store.customQ||[],have=new Set(cq.map(c=>c.t));
   const vis=qs=>jEdit?qs:qs.filter(([id])=>!isHid(id)),nh=(store.hiddenQ||[]).length;
   return `<div class="ehead"><h2 class="jtitle">Was war los?</h2><button class="mini" data-act="jedit">${jEdit?'FERTIG':'BEARBEITEN'} ${jEdit?'':I.pencil}</button></div><p class="jsub">${jEdit?'Blende Fragen aus, die du nicht brauchst. Ausgeblendete Fragen tauchen im Logbuch und auf der Startseite nicht mehr auf.':fromIso(k).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})+(nh?` · ${nh} ausgeblendet`:'')}</p>
-  ${JQ.map(([g,qs])=>vis(qs).length?`<div class="jgrp">${g}</div>${vis(qs).map(([id,t])=>qRow(id,t,j,jEdit?'hide':false)).join('')}`:'').join('')}
-  <div class="jgrp2"><span>EIGENE FRAGEN</span></div>
-  ${vis(cq.map(c=>[c.id,c.t])).map(([id,t])=>qRow(id,t,j,jEdit)).join('')||'<p class="hint">Noch keine eigenen Fragen. Schreib eine eigene oder tippe auf einen Vorschlag.</p>'}
-  <div class="addq"><input id="newq" placeholder="Eigene Frage, z. B. Meditiert?" maxlength="60" autocomplete="off" aria-label="Eigene Frage"><button class="plus" data-act="addq" aria-label="Frage hinzufügen">${I.plus}</button></div>
+  ${CATS.map(g=>{const std=(JQ.find(x=>x[0]===g)||[0,[]])[1].map(q=>[...q,false]),cus=cq.filter(c=>qCat(c)===g).map(c=>[c.id,c.t,true]),qs=vis([...std,...cus]);
+    return qs.length?`<div class="jgrp">${g}</div>${qs.map(([id,t,isC])=>qRow(id,t,j,jEdit?(isC?true:'hide'):false)).join('')}`:''}).join('')}
+  <div class="jgrp2"><span>FRAGE HINZUFÜGEN</span></div>
+  <div class="addq"><input id="newq" placeholder="z. B. Meditiert?" maxlength="60" autocomplete="off" aria-label="Neue Frage"><button class="plus" data-act="addq" aria-label="Frage hinzufügen">${I.plus}</button></div>
+  <div class="field" style="margin-top:10px"><label for="newcat">Kategorie</label><select id="newcat"><option value="">Automatisch</option>${CATS.map(c=>`<option value="${c}">${c[0]+c.slice(1).toLowerCase()}</option>`).join('')}</select></div>
   <div class="chips">${SUGG.filter(t=>!have.has(t)).slice(0,6).map(t=>`<button class="chipq" data-act="sugg" data-t="${esc(t)}">+ ${t}</button>`).join('')}</div>
   <button class="cta" data-act="jsave">LOGBUCH SPEICHERN</button>`}
 
@@ -884,8 +894,8 @@ function render(){
 }
 function pickData(){data=store.real&&Object.keys(store.daily).length?store:demo();const ds=days();if(!ds.includes(cur))cur=ds[ds.length-1];if(trendEnd&&!ds.includes(trendEnd))trendEnd=null}
 function go(v){if(!SUB.includes(view))prevView=view;view=v;editDash=false;jEdit=false;const h=v==='metric'?'m-'+metricKey:v;if(location.hash!=='#'+h){try{history.replaceState(null,'','#'+h)}catch(e){location.hash=h}}render();window.scrollTo(0,0)}
-function addQ(t){t=String(t||'').trim();if(!t)return;store.customQ=store.customQ||[];if(store.customQ.some(c=>c.t.toLowerCase()===t.toLowerCase())){toast('Diese Frage gibt es schon');return}
-  store.customQ.push({id:'c'+Date.now().toString(36),t:t.endsWith('?')?t:t+'?'});save();if(data!==store)data.customQ=store.customQ;render();toast('Frage hinzugefügt')}
+function addQ(t,cat){t=String(t||'').trim();if(!t)return;store.customQ=store.customQ||[];if(store.customQ.some(c=>c.t.toLowerCase()===t.toLowerCase())){toast('Diese Frage gibt es schon');return}
+  const q=t.endsWith('?')?t:t+'?',c=cat&&CATS.includes(cat)?cat:autoCat(q);store.customQ.push({id:'c'+Date.now().toString(36),t:q,cat:c});save();if(data!==store)data.customQ=store.customQ;render();toast('Hinzugefügt unter '+c[0]+c.slice(1).toLowerCase())}
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),1800)}
 function stepDay(d){const ds=days(),i=ds.indexOf(cur)+d;if(ds[i]){cur=ds[i];render()}}
 function journalSet(q,v){const j=store.journal[cur]=store.journal[cur]||{};if(j[q]===v)delete j[q];else j[q]=v;if(q==='caffeine'&&j.caffeine===1&&!j.caffeine_n)j.caffeine_n=1;save();if(data!==store)data.journal=store.journal;render()}
@@ -898,7 +908,7 @@ function act(a,el){
   else if(a==='back')go(prevView||'home');
   else if(a==='metric'){metricKey=el.dataset.k;go('metric')}
   else if(a==='mrange'){mRange=+el.dataset.r;render()}
-  else if(a==='addq'){const i=$('#newq');addQ(i&&i.value)}
+  else if(a==='addq'){const i=$('#newq'),c=$('#newcat');addQ(i&&i.value,c&&c.value)}
   else if(a==='sugg')addQ(el.dataset.t);
   else if(a==='rmq'){store.customQ=(store.customQ||[]).filter(c=>c.id!==el.dataset.q);store.hiddenQ=(store.hiddenQ||[]).filter(x=>x!==el.dataset.q);save();if(data!==store)data.customQ=store.customQ;render()}
   else if(a==='hideq'){const q=el.dataset.q,h=store.hiddenQ=store.hiddenQ||[];const i=h.indexOf(q);if(i>=0)h.splice(i,1);else h.push(q);save();render()}
@@ -938,7 +948,7 @@ document.addEventListener('change',async e=>{
     if(done.length){store.real=true;save();cur=null;pickData();render();const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.'}
     else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Nimm den CSV-Export aus OpenStrap (Daily metrics, Sleep stages oder Workouts).'}}}
 });
-addEventListener('keydown',e=>{if(e.key==='Escape')$('#sheet').hidden=true;if(e.key==='Enter'&&e.target.id==='newq'){e.preventDefault();addQ(e.target.value)}});
+addEventListener('keydown',e=>{if(e.key==='Escape')$('#sheet').hidden=true;if(e.key==='Enter'&&e.target.id==='newq'){e.preventDefault();const c=$('#newcat');addQ(e.target.value,c&&c.value)}});
 function fromHash(h){if(h.startsWith('m-')&&MET[h.slice(2)]){metricKey=h.slice(2);return'metric'}return DETAIL[h]||MAIN.includes(h)||SUB.includes(h)?h:null}
 addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v&&(v!==view||v==='metric')){if(!SUB.includes(view))prevView=view;view=v;render()}});
 
