@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793325321";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793325670";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -572,7 +572,9 @@ function monitors(k){
 const target=r=>r==null?null:r>=67?'14–18':r>=34?'10–14':'unter 10';
 
 /* ---------- Ansichten ---------- */
-function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[k],jn=j?Object.keys(j).filter(q=>!q.endsWith('_n')&&allQ().some(([id])=>id===q)).length:0;
+const jKey=k=>shift(k,-1);
+const jLabel=k=>{const y=jKey(k),t=iso(new Date());return y===shift(t,-1)?'gestern':'am '+fromIso(y).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})};
+function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.keys(j).filter(q=>!q.endsWith('_n')&&allQ().some(([id])=>id===q)).length:0;
   return `<div class="dials" style="padding-top:26px">
     <button class="dial" data-go="schlaf" aria-label="Schlaf ${p??'–'} Prozent">${ring(p==null?0:p/100,'var(--sleep)',{inner:rtext(110,p??'–',p==null?'':'%',30)})}<span class="dlab">SCHLAF ${I.chev}</span></button>
     <button class="dial" data-go="erholung" aria-label="Erholung ${x.rec??'–'} Prozent">${ring(x.rec==null?0:x.rec/100,recCol(x.rec),{inner:rtext(110,x.rec??'–',x.rec==null?'':'%',30)})}<span class="dlab">ERHOLUNG ${I.chev}</span></button>
@@ -582,7 +584,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[k],jn=j?Object.keys(j)
   <div class="h-row"><h2 class="h1">Mein Tag</h2><button class="plus" data-go="logbuch" aria-label="Logbuch ausfüllen">${I.plus}</button></div>
   <button class="outlook" data-go="ausblick">${I.sun}<span>Täglicher Ausblick</span><span class="chev">${I.chev}</span></button>
   ${acts(k)}
-  <div class="card jcard jc"><div class="card-h"><span>MEIN LOGBUCH</span><span class="ring-ok ${jn?'done':''}">${I.check}</span></div>
+  <div class="card jcard jc"><div class="card-h"><span>MEIN LOGBUCH · ${jLabel(k)==='gestern'?'GESTERN':fromIso(jKey(k)).toLocaleDateString('de-DE',{day:'numeric',month:'numeric'})}</span><span class="ring-ok ${jn?'done':''}">${I.check}</span></div>
     <p>${jn?`${jn} von ${allQ().length} Fragen beantwortet.`:'Dein Logbuch ist noch nicht ausgefüllt. Halte fest, was du gemacht hast, um zu sehen, wie es dich beeinflusst.'}</p>
     ${allQ().filter(([id])=>!(id in (j||{}))).slice(0,3).map(([id,t])=>qRow(id,t,j||{})).join('')}
     <button class="linkb" data-go="logbuch">${jn>=allQ().length?'LOGBUCH ANSEHEN':'ALLE FRAGEN BEANTWORTEN'} ${I.chev}</button></div>
@@ -693,9 +695,9 @@ function qRow(id,t,j,rm){const hid=isHid(id);return `<div class="q${hid?' qhid':
     ${rm==='hide'?`<button class="hidb${hid?'':' on'}" data-act="hideq" data-q="${id}">${hid?'EINBLENDEN':'AUSBLENDEN'}</button>`:rm?`<button class="hidb${hid?'':' on'}" data-act="hideq" data-q="${id}">${hid?'EINBLENDEN':'AUSBLENDEN'}</button><button class="rm" data-act="rmq" data-q="${id}" aria-label="Frage löschen">${I.x}</button>`:`<button class="no" data-act="yn" data-q="${id}" data-v="0" aria-pressed="${j[id]===0}" aria-label="Nein">${I.x}</button>
     <button class="yes" data-act="yn" data-q="${id}" data-v="1" aria-pressed="${j[id]===1}" aria-label="Ja">${I.check}</button>`}</span></div>
     ${id==='caffeine'&&j[id]===1?`<div class="subq"><span>Wie viele Portionen?</span><span class="step"><button data-act="step" data-q="caffeine_n" data-d="-1" aria-label="Weniger">–</button><b class="num">${j.caffeine_n||1}</b><button data-act="step" data-q="caffeine_n" data-d="1" aria-label="Mehr">+</button></span></div>`:''}`}
-function vJournal(k){const j=(data.journal&&data.journal[k])||{},cq=store.customQ||[],have=new Set(cq.map(c=>c.t));
+function vJournal(k){const j=(data.journal&&data.journal[jKey(k)])||{},cq=store.customQ||[],have=new Set(cq.map(c=>c.t));
   const vis=qs=>jEdit?qs:qs.filter(([id])=>!isHid(id)),nh=(store.hiddenQ||[]).length;
-  return `<div class="ehead"><h2 class="jtitle">Was war los?</h2><button class="mini" data-act="jedit">${jEdit?'FERTIG':'BEARBEITEN'} ${jEdit?'':I.pencil}</button></div><p class="jsub">${jEdit?'Blende Fragen aus, die du nicht brauchst. Ausgeblendete Fragen tauchen im Logbuch und auf der Startseite nicht mehr auf.':fromIso(k).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})+(nh?` · ${nh} ausgeblendet`:'')}</p>
+  return `<div class="ehead"><h2 class="jtitle">Was war ${jLabel(k)} los?</h2><button class="mini" data-act="jedit">${jEdit?'FERTIG':'BEARBEITEN'} ${jEdit?'':I.pencil}</button></div><p class="jsub">${jEdit?'Blende Fragen aus, die du nicht brauchst. Ausgeblendete Fragen tauchen im Logbuch und auf der Startseite nicht mehr auf.':fromIso(jKey(k)).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})+' · morgens für den Vortag ausfüllen'+(nh?` · ${nh} ausgeblendet`:'')}</p>
   ${CATS.map(g=>{const std=(JQ.find(x=>x[0]===g)||[0,[]])[1].map(q=>[...q,false]),cus=cq.filter(c=>qCat(c)===g).map(c=>[c.id,c.t,true]),qs=vis([...std,...cus]);
     return qs.length?`<div class="jgrp">${g}</div>${qs.map(([id,t,isC])=>qRow(id,t,j,jEdit?(isC?true:'hide'):false)).join('')}`:''}).join('')}
   <div class="jgrp2"><span>FRAGE HINZUFÜGEN</span></div>
@@ -900,7 +902,7 @@ function addQ(t,cat){t=String(t||'').trim();if(!t)return;store.customQ=store.cus
   const q=t.endsWith('?')?t:t+'?',c=cat&&CATS.includes(cat)?cat:autoCat(q);store.customQ.push({id:'c'+Date.now().toString(36),t:q,cat:c});save();if(data!==store)data.customQ=store.customQ;render();toast('Hinzugefügt unter '+c[0]+c.slice(1).toLowerCase())}
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),1800)}
 function stepDay(d){const ds=days(),i=ds.indexOf(cur)+d;if(ds[i]){cur=ds[i];render()}}
-function journalSet(q,v){const j=store.journal[cur]=store.journal[cur]||{};if(j[q]===v)delete j[q];else j[q]=v;if(q==='caffeine'&&j.caffeine===1&&!j.caffeine_n)j.caffeine_n=1;save();if(data!==store)data.journal=store.journal;render()}
+function journalSet(q,v){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};if(j[q]===v)delete j[q];else j[q]=v;if(q==='caffeine'&&j.caffeine===1&&!j.caffeine_n)j.caffeine_n=1;save();if(data!==store)data.journal=store.journal;render()}
 function act(a,el){
   if(a==='prev')stepDay(-1);else if(a==='next')stepDay(1);
   else if(a==='wprev'||a==='wnext'){trendEnd=shift(trendEnd||cur,a==='wprev'?-7:7);const ds=days();if(trendEnd>ds[ds.length-1])trendEnd=ds[ds.length-1];render()}
@@ -932,7 +934,7 @@ function act(a,el){
   else if(a==='dash-edit'){editDash=!editDash;render()}
   else if(a==='dash-tog'){const k=el.dataset.k,i=store.dash.indexOf(k);if(i>=0)store.dash.splice(i,1);else store.dash.push(k);save();if(data!==store)data.dash=store.dash;render()}
   else if(a==='yn')journalSet(el.dataset.q,+el.dataset.v);
-  else if(a==='step'){const j=store.journal[cur]=store.journal[cur]||{};j.caffeine_n=clamp((j.caffeine_n||1)+(+el.dataset.d),1,10);save();render()}
+  else if(a==='step'){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};j.caffeine_n=clamp((j.caffeine_n||1)+(+el.dataset.d),1,10);save();render()}
   else if(a==='jsave'){save();toast('Logbuch gespeichert');go(prevView==='logbuch'?'home':prevView||'home')}
   else if(a==='demo'){store.real=false;save();cur=null;pickData();render()}
   else if(a==='mine'){store.real=true;save();cur=null;pickData();render()}
