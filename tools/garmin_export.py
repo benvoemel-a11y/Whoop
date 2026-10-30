@@ -53,7 +53,11 @@ def login():
     return g
 
 
-def safe(fn, *a):
+def safe(g, name, *a):
+    """Ruft eine Garmin-Funktion auf, falls diese Version sie kennt."""
+    fn = getattr(g, name, None)
+    if fn is None:
+        return None
     try:
         return fn(*a)
     except Exception:
@@ -79,7 +83,7 @@ def mins(sec):
 
 def day(g, d):
     out = {"date": d}
-    st = safe(g.get_stats, d) or {}
+    st = safe(g, "get_stats", d) or {}
     out["steps"] = st.get("totalSteps")
     out["kcal"] = st.get("totalKilocalories")
     out["akcal"] = st.get("activeKilocalories")
@@ -87,7 +91,7 @@ def day(g, d):
     stress = st.get("averageStressLevel")
     out["stress"] = stress if stress is not None and stress >= 0 else None
 
-    sl = safe(g.get_sleep_data, d) or {}
+    sl = safe(g, "get_sleep_data", d) or {}
     s = sl.get("dailySleepDTO") or {}
     out["sleep"] = mins(s.get("sleepTimeSeconds"))
     out["deep"] = mins(s.get("deepSleepSeconds"))
@@ -106,22 +110,22 @@ def day(g, d):
         if a and b and stg:
             levels.append([a, b, stg])
 
-    hrv = safe(g.get_hrv_data, d) or {}
+    hrv = safe(g, "get_hrv_data", d) or {}
     out["hrv"] = (hrv.get("hrvSummary") or {}).get("lastNightAvg") or sl.get("avgOvernightHrv")
 
     rec = None
-    mtr = safe(g.get_morning_training_readiness, d)
+    mtr = safe(g, "get_morning_training_readiness", d)
     if isinstance(mtr, dict):
         rec = mtr.get("score")
     if rec is None:
-        tr = safe(g.get_training_readiness, d)
+        tr = safe(g, "get_training_readiness", d)
         if isinstance(tr, list) and tr:
             rec = tr[-1].get("score")
     if rec is None:
         rec = st.get("bodyBatteryAtWakeTime") or st.get("bodyBatteryHighestValue")
     out["rec"] = rec
 
-    mm = safe(g.get_max_metrics, d)
+    mm = safe(g, "get_max_metrics", d)
     if isinstance(mm, list):
         mm = mm[0] if mm else {}
     if isinstance(mm, dict):
@@ -149,7 +153,7 @@ def main():
     print()
 
     workouts = []
-    for a in safe(g.get_activities_by_date, start.isoformat(), today.isoformat()) or []:
+    for a in safe(g, "get_activities_by_date", start.isoformat(), today.isoformat()) or []:
         t0 = gmt_ms(a.get("startTimeGMT"))
         dur = a.get("duration")
         if not t0 or not dur:
@@ -162,7 +166,7 @@ def main():
             "max": a.get("maxHR"), "kcal": a.get("calories"),
         })
 
-    bc = safe(g.get_body_composition, start.isoformat(), today.isoformat()) or {}
+    bc = safe(g, "get_body_composition", start.isoformat(), today.isoformat()) or {}
     weights = {}
     for w in bc.get("dateWeightList") or []:
         if w.get("weight"):
@@ -172,7 +176,7 @@ def main():
         rec.update(weights.pop(rec["date"], {}))
     days += [{"date": d, **v} for d, v in weights.items()]
 
-    fa = safe(g.get_fitnessage_data, today.isoformat()) or {}
+    fa = safe(g, "get_fitnessage_data", today.isoformat()) or {}
     fitness_age = fa.get("fitnessAge") if isinstance(fa, dict) else None
 
     data = {"app": "whoop-by-me", "fitnessAge": round(fitness_age, 1) if fitness_age else None, "source": "garmin", "created": dt.datetime.now().isoformat(timespec="seconds"),
