@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793356334";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793357790";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -636,6 +636,7 @@ const target=r=>r==null?null:r>=67?'14–18':r>=34?'10–14':'unter 10';
 
 /* ---------- Ansichten ---------- */
 const jKey=k=>shift(k,-1);
+const jDoneK=k=>{const jk=jKey(k),j=(data.journal||{})[jk]||{},n=allQ().filter(([id])=>id in j).length;return !!(store.jDone&&store.jDone[jk])||(n>0&&n>=allQ().length)};
 const jLabel=k=>{const y=jKey(k),t=iso(new Date());return y===shift(t,-1)?'gestern':'am '+fromIso(y).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})};
 function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.keys(j).filter(q=>!q.endsWith('_n')&&allQ().some(([id])=>id===q)).length:0;
   return `<div class="dials" style="padding-top:26px">
@@ -649,9 +650,10 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.k
   <button class="outlook" data-go="ausblick">${I.sun}<span>Täglicher Ausblick</span><span class="chev">${I.chev}</span></button>
   ${acts(k)}
   <div class="card jcard jc"><div class="card-h"><span>MEIN LOGBUCH · ${jLabel(k)==='gestern'?'GESTERN':fromIso(jKey(k)).toLocaleDateString('de-DE',{day:'numeric',month:'numeric'})}</span><span class="ring-ok ${jn?'done':''}">${I.check}</span></div>
+    ${jDoneK(k)?`<p>Ausgefüllt · ${jn} von ${allQ().length} Fragen beantwortet.</p><button class="linkb" data-go="logbuch">LOGBUCH BEARBEITEN ${I.chev}</button></div>`:`
     <p>${jn?`${jn} von ${allQ().length} Fragen beantwortet.`:'Dein Logbuch ist noch nicht ausgefüllt. Halte fest, was du gemacht hast, um zu sehen, wie es dich beeinflusst.'}</p>
     ${allQ().filter(([id])=>!(id in (j||{}))).slice(0,3).map(([id,t])=>qRow(id,t,j||{})).join('')}
-    <button class="linkb" data-go="logbuch">${jn>=allQ().length?'LOGBUCH ANSEHEN':'ALLE FRAGEN BEANTWORTEN'} ${I.chev}</button></div>
+    <button class="linkb" data-go="logbuch">ALLE FRAGEN BEANTWORTEN ${I.chev}</button></div>`}
   <div class="h-row"><h2 class="h1">Mein Dashboard</h2><button class="mini" data-act="dash-edit">${editDash?'FERTIG':'PERSONALISIEREN'} ${I.pencil}</button></div>
   ${editDash?`<div class="dash-edit">${['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress','weight','fat'].map(m=>`<button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="${data.dash.includes(m)}"><span>${MET[m].n}</span><span class="sw"></span></button>`).join('')}</div>`
   :data.dash.map(m=>mrow(m,k)).join('')}`}
@@ -754,12 +756,14 @@ const CAT_RULES=[['NAHRUNGSERGÄNZUNG',/magnesium|kreatin|creatin|vitamin|omega|
 const autoCat=t=>{t=String(t).toLowerCase();for(const[c,r]of CAT_RULES)if(r.test(t))return c;return'LIFESTYLE'};
 const qCat=c=>c.cat&&CATS.includes(c.cat)?c.cat:autoCat(c.t);
 const isHid=id=>(store.hiddenQ||[]).includes(id);
-const allQ=()=>CATS.flatMap(g=>[...((JQ.find(x=>x[0]===g)||[0,[]])[1]),...(store.customQ||[]).filter(c=>qCat(c)===g).map(c=>[c.id,c.t])]).filter(([id])=>!isHid(id));
+const STDT=()=>new Set(JQ.flatMap(([,qs])=>qs.map(q=>q[1].toLowerCase())));
+const cqList=()=>{const st=STDT();return (store.customQ||[]).filter(c=>!st.has(String(c.t).toLowerCase()))};
+const allQ=()=>CATS.flatMap(g=>[...((JQ.find(x=>x[0]===g)||[0,[]])[1]),...cqList().filter(c=>qCat(c)===g).map(c=>[c.id,c.t])]).filter(([id])=>!isHid(id));
 function qRow(id,t,j,rm){const hid=isHid(id);return `<div class="q${hid?' qhid':''}"><span>${esc(t)}</span><span class="yn">
     ${rm==='hide'?`<button class="hidb${hid?'':' on'}" data-act="hideq" data-q="${id}">${hid?'EINBLENDEN':'AUSBLENDEN'}</button>`:rm?`<button class="hidb${hid?'':' on'}" data-act="hideq" data-q="${id}">${hid?'EINBLENDEN':'AUSBLENDEN'}</button><button class="rm" data-act="rmq" data-q="${id}" aria-label="Frage löschen">${I.x}</button>`:`<button class="no" data-act="yn" data-q="${id}" data-v="0" aria-pressed="${j[id]===0}" aria-label="Nein">${I.x}</button>
     <button class="yes" data-act="yn" data-q="${id}" data-v="1" aria-pressed="${j[id]===1}" aria-label="Ja">${I.check}</button>`}</span></div>
     ${id==='caffeine'&&j[id]===1?`<div class="subq"><span>Wie viele Portionen?</span><span class="step"><button data-act="step" data-q="caffeine_n" data-d="-1" aria-label="Weniger">–</button><b class="num">${j.caffeine_n||1}</b><button data-act="step" data-q="caffeine_n" data-d="1" aria-label="Mehr">+</button></span></div>`:''}`}
-function vJournal(k){const j=(data.journal&&data.journal[jKey(k)])||{},cq=store.customQ||[],have=new Set(cq.map(c=>c.t));
+function vJournal(k){const j=(data.journal&&data.journal[jKey(k)])||{},cq=cqList(),have=new Set(cq.map(c=>c.t));
   const vis=qs=>jEdit?qs:qs.filter(([id])=>!isHid(id)),nh=(store.hiddenQ||[]).length;
   return `<div class="ehead"><h2 class="jtitle">Was war ${jLabel(k)} los?</h2><button class="mini" data-act="jedit">${jEdit?'FERTIG':'BEARBEITEN'} ${jEdit?'':I.pencil}</button></div><p class="jsub">${jEdit?'Blende Fragen aus, die du nicht brauchst. Ausgeblendete Fragen tauchen im Logbuch und auf der Startseite nicht mehr auf.':fromIso(jKey(k)).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})+(nh?` · ${nh} ausgeblendet`:'')}</p>
   ${CATS.map(g=>{const std=(JQ.find(x=>x[0]===g)||[0,[]])[1].map(q=>[...q,false]),cus=cq.filter(c=>qCat(c)===g).map(c=>[c.id,c.t,true]),qs=vis([...std,...cus]);
@@ -1092,7 +1096,7 @@ function render(){
 function pickData(){data=store.real&&Object.keys(store.daily).length?store:demo();const ds=days();if(!ds.includes(cur))cur=ds[ds.length-1];if(trendEnd&&!ds.includes(trendEnd))trendEnd=null}
 const scrollMem={};
 function go(v,restore){scrollMem[view]=window.scrollY;if(!SUB.includes(view))prevView=view;view=v;editDash=false;jEdit=false;const h=v==='metric'?'m-'+metricKey:v;if(location.hash!=='#'+h){try{history.replaceState(null,'','#'+h)}catch(e){location.hash=h}}render();const y=restore?(scrollMem[v]||0):0;window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y))}
-function addQ(t,cat){t=String(t||'').trim();if(!t)return;store.customQ=store.customQ||[];if(store.customQ.some(c=>c.t.toLowerCase()===t.toLowerCase())){toast('Diese Frage gibt es schon');return}
+function addQ(t,cat){t=String(t||'').trim();if(!t)return;store.customQ=store.customQ||[];const tq=(t.endsWith('?')?t:t+'?').toLowerCase();if(store.customQ.some(c=>c.t.toLowerCase()===tq)||STDT().has(tq)){toast('Diese Frage gibt es schon');return}
   const q=t.endsWith('?')?t:t+'?',c=cat&&CATS.includes(cat)?cat:autoCat(q);store.customQ.push({id:'c'+Date.now().toString(36),t:q,cat:c});save();if(data!==store)data.customQ=store.customQ;render();toast('Hinzugefügt unter '+c[0]+c.slice(1).toLowerCase())}
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),1800)}
 function stepDay(d){const ds=days(),i=ds.indexOf(cur)+d;if(ds[i]){cur=ds[i];render()}}
@@ -1143,7 +1147,7 @@ function act(a,el){
   else if(a==='dash-tog'){const k=el.dataset.k,i=store.dash.indexOf(k);if(i>=0)store.dash.splice(i,1);else store.dash.push(k);save();if(data!==store)data.dash=store.dash;render()}
   else if(a==='yn')journalSet(el.dataset.q,+el.dataset.v);
   else if(a==='step'){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};j.caffeine_n=clamp((j.caffeine_n||1)+(+el.dataset.d),1,10);save();render()}
-  else if(a==='jsave'){save();toast('Logbuch gespeichert');go(prevView==='logbuch'?'home':prevView||'home')}
+  else if(a==='jsave'){store.jDone=store.jDone||{};store.jDone[jKey(cur)]=true;save();toast('Logbuch gespeichert');go(prevView==='logbuch'?'home':prevView||'home')}
   else if(a==='demo'){store.real=false;save();cur=null;pickData();render()}
   else if(a==='mine'){store.real=true;save();cur=null;pickData();render()}
   else if(a==='wipe1')sheetWipe(1);
