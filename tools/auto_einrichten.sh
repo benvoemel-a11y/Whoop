@@ -50,8 +50,9 @@ EOF
 launchctl unload "$PLIST" 2>/dev/null
 launchctl load "$PLIST"
 echo "Automatik eingerichtet: jeden Tag um 7:00, 14:00 und 22:00."
-echo "Test läuft jetzt, bitte ca. 30 Sekunden warten ..."
+echo "Test läuft jetzt, bitte ca. 40 Sekunden warten ..."
+: > "$LOG"
 launchctl start "$LABEL"
-sleep 30
+sleep 40
 echo "----- Ergebnis -----"
 tail -n 4 "$LOG"
