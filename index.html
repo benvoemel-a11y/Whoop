@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793327278";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793327370";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -945,7 +945,8 @@ function vMore(){const nd=Object.keys(store.daily||{}).length;
     <button class="btn g" data-act="demo">${store.real?'BEISPIELDATEN ANSEHEN':'BEISPIELDATEN WERDEN ANGEZEIGT'}</button>
     ${store.real?'':(nd?'<button class="btn g" data-act="mine">MEINE DATEN ANZEIGEN</button>':'')}`)}
   ${grp('loeschen','Daten löschen','Alles auf diesem Gerät zurücksetzen',`<p class="about" style="margin-top:0">Löscht alle importierten Werte, Logbuch-Antworten und Geräte. Profil und Einstellungen bleiben.</p><button class="btn warn" data-act="wipe1">MEINE DATEN LÖSCHEN …</button>`)}
-  ${grp('ueber','Über die App','',`<p class="about" style="margin-top:0">Deine Daten bleiben nur auf diesem Gerät. Das Band wird über OpenStrap Edge synchronisiert, diese App zeigt die Werte an. Erholung und Belastung stammen aus den Berechnungen von OpenStrap, nicht von Whoop.</p>`)}`}
+  ${grp('ueber','Über die App','',`<p class="about" style="margin-top:0">Deine Daten bleiben nur auf diesem Gerät. Das Band wird über OpenStrap Edge synchronisiert, diese App zeigt die Werte an. Erholung und Belastung stammen aus den Berechnungen von OpenStrap, nicht von Whoop.</p>`)}
+  <p class="tnote" style="margin-top:18px">Version ${window.APP_BUILD?new Date(+window.APP_BUILD*1000).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Vorschau'} · PDF-Import aktiv</p>`}
 
 function sheetWipe(step){const nd=Object.keys(store.daily||{}).length,nj=Object.keys(store.journal||{}).length;
   if(step===1)openSheet('DATEN LÖSCHEN',`<p class="otext" style="margin:6px 0 0;color:var(--muted);font-size:17px;line-height:1.5">Willst du wirklich alle deine Daten löschen?<br><br>Betroffen: <b style="color:var(--fg)">${nd} Tage</b> mit Werten und <b style="color:var(--fg)">${nj} Logbuch-Tage</b>. Das lässt sich nicht rückgängig machen.</p>
