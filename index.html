@@ -219,7 +219,10 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .wl{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:10px 12px;margin-top:10px}
 .wl span{flex:1;min-width:0}
 .wl b{font-weight:700}
-.prompt{display:flex;align-items:center;gap:14px;width:100%;margin-top:14px;padding:16px;border-radius:16px;border:1px dashed #56616a}
+.prompt-w{position:relative}
+.prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
+.prompt-x svg{width:16px;height:16px}
+.prompt{padding-right:46px!important;display:flex;align-items:center;gap:14px;width:100%;margin-top:14px;padding:16px;border-radius:16px;border:1px dashed #56616a}
 .prompt svg{width:26px;height:26px;flex:none;color:var(--mint)}
 .prompt b{display:block;font-size:13px;font-weight:800;letter-spacing:.1em}
 .prompt span{color:var(--muted);font-size:14px}
@@ -547,7 +550,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[k],jn=j?Object.keys(j)
     <button class="dial" data-go="belastung" aria-label="Belastung ${fmt(x.strain,1)}">${ring(x.strain==null?0:x.strain/21,'var(--strain)',{inner:rtext(110,fmt(x.strain,1),'',30)})}<span class="dlab">BELASTUNG ${I.chev}</span></button>
   </div>
   ${monitors(k)}
-  ${store.daily[iso(new Date())]?'':`<button class="prompt" data-go="mehr">${I.plus}<span><b>WERTE FÜR HEUTE EINTRAGEN</b><span>Garmin-Datei importieren oder selbst eintragen</span></span></button>`}
+  ${store.daily[iso(new Date())]||store.hideGarmin?'':`<div class="prompt-w"><button class="prompt" data-go="mehr">${I.plus}<span><b>WERTE FÜR HEUTE EINTRAGEN</b><span>Garmin-Datei importieren oder selbst eintragen</span></span></button><button class="prompt-x" data-act="hidegarmin" aria-label="Ausblenden">${I.x}</button></div>`}
   <div class="h-row"><h2 class="h1">Mein Tag</h2><button class="plus" data-go="logbuch" aria-label="Logbuch ausfüllen">${I.plus}</button></div>
   <button class="outlook" data-go="ausblick">${I.sun}<span>Täglicher Ausblick</span><span class="chev">${I.chev}</span></button>
   ${acts(k)}
@@ -754,7 +757,8 @@ function saveEntry(quiet){const{k,o,any}=readEntry(),hasW=store.workouts.some(w=
 function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</span></div>
   <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
   <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>
-  <div class="sec"><span>Garmin automatisch</span></div>
+  <button class="tog" data-act="togglegarmin" aria-pressed="${!store.hideGarmin}" style="width:100%;margin-top:24px"><span>Garmin &amp; Eintragen anzeigen</span><span class="sw"></span></button>
+  ${store.hideGarmin?'':`<div class="sec"><span>Garmin automatisch</span></div>
   <ol class="steps-list">
     <li>Einmalig im <b>Terminal</b> auf dem Mac:<br><code class="cmd">pip3 install garminconnect</code><br><code class="cmd">curl -O https://raw.githubusercontent.com/benvoemel-a11y/Whoop/main/tools/garmin_export.py</code></li>
     <li>Werte holen (beim ersten Mal mit Garmin-Login):<br><code class="cmd">python3 garmin_export.py</code></li>
@@ -762,7 +766,7 @@ function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</
   <p class="about">Holt die letzten 30 Tage: Schlaf mit Phasen, HRV, Ruhepuls, Atemfrequenz, Stress, Trainingsbereitschaft als Erholung, Aktivitäten und Gewicht. Erneut importieren ist sicher, nichts wird doppelt gezählt.</p>
   <div class="sec"><span>Werte selbst eintragen</span></div>
   <p class="about">Falls etwas fehlt, kannst du einzelne Tage auch von Hand ergänzen.</p>
-  <button class="btn g" data-act="entry">TAG EINTRAGEN</button>
+  <button class="btn g" data-act="entry">TAG EINTRAGEN</button>`}
   <div class="sec"><span>Gewicht aus Withings</span></div>
   <p class="about">Exportiere deine Daten in deinem Withings-Konto und wähle die Datei <b>weight.csv</b> unten aus. Gewicht und Körperfett landen dann im Dashboard.</p>
   <div class="sec"><span>Daten aus OpenStrap</span></div>
@@ -846,6 +850,8 @@ function act(a,el){
   else if(a==='sugg')addQ(el.dataset.t);
   else if(a==='rmq'){store.customQ=(store.customQ||[]).filter(c=>c.id!==el.dataset.q);save();if(data!==store)data.customQ=store.customQ;if(!store.customQ.length)jEdit=false;render()}
   else if(a==='jedit'){jEdit=!jEdit;render()}
+  else if(a==='hidegarmin'){store.hideGarmin=true;save();render();toast('Ausgeblendet. Unter „Mehr“ wieder einschaltbar.')}
+  else if(a==='togglegarmin'){store.hideGarmin=!store.hideGarmin;save();render()}
   else if(a==='entry'){entryDate=el.dataset.d||(store.real&&cur&&store.daily[cur]?cur:iso(new Date()));go('eintragen')}
   else if(a==='addw'){const k=saveEntry(true),dur=n($('#a_dur').value),avg=n($('#a_avg').value),[h,m]=($('#a_start').value||'17:00').split(':').map(Number);
     if(!dur){toast('Bitte eine Dauer eintragen');return}const d=fromIso(k);d.setHours(h,m,0,0);
