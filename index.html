@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793326580";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793327202";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -364,7 +364,7 @@ nav svg{width:28px;height:28px}
 <main class="in" id="view"></main>
 <nav aria-label="Hauptnavigation"><div class="row" id="nav"></div></nav>
 <div class="sheet" id="sheet" hidden><div class="box" id="sheetBox" role="dialog" aria-modal="true"></div></div>
-<input id="file" type="file" accept=".csv,.json,text/csv,application/json" multiple hidden>
+<input id="file" type="file" multiple hidden>
 
 <script>
 (()=>{
@@ -440,6 +440,29 @@ function stageOf(v){const s=String(v).toLowerCase();
   if(s.includes('rem'))return'rem';return'light'}
 const DEV={whoop:{n:'Whoop 4.0',sub:'über OpenStrap Edge',ic:'strap'},garmin:{n:'Garmin',sub:'Forerunner und andere Uhren',ic:'watch'},withings:{n:'Withings',sub:'Waage für Gewicht und Körperfett',ic:'scale'}};
 function addDev(t){store.devices=store.devices||{};store.devices[t]=Object.assign({added:Date.now()},store.devices[t],{last:Date.now()})}
+/* Withings-Gesundheitsbericht (PDF), Parser aus Bodyline übernommen */
+function wNum(s){if(s==null)return null;s=String(s).trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');else if(/^[-+]?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');const v=parseFloat(s);return isFinite(v)?v:null}
+const WMON={jan:1,feb:2,'mär':3,mar:3,mrz:3,apr:4,mai:5,jun:6,jul:7,aug:8,sep:9,okt:10,nov:11,dez:12};
+const WMRE='(Jan|Feb|Mär|Mar|Mrz|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez)[a-zä]*\\.?';
+const wIso=(y,m,d)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+function parseWithingsReport(raw){const t=raw.replace(/\s+/g,' '),N='([-+]?\\d[\\d.]*(?:,\\d+)?)',G='[^\\d+-]{0,4}',r={};
+  const pm=t.match(new RegExp('(\\d{1,2})\\.?\\s*'+WMRE+'\\s*(\\d{4})?\\s*[-–]\\s*(\\d{1,2})\\.?\\s*'+WMRE+'\\s*(\\d{4})','i'));
+  const sm=t.match(new RegExp('(\\d{1,2})\\.?\\s*'+WMRE+'\\s*(\\d{4})','i'));
+  if(pm)r.date=wIso(+pm[6],WMON[pm[5].toLowerCase().slice(0,3)],pm[4]);else if(sm){const m=WMON[sm[2].toLowerCase().slice(0,3)];if(m)r.date=wIso(sm[3],m,sm[1])}
+  const pair=(key,label,unit)=>{const u=unit?'\\s*'+unit:'';const m=t.match(new RegExp(label+'\\s+'+N+u+'\\s*(?:Neueste|Durchschnitt)(?:'+G+N+u+'\\s*Verlauf)?'));if(m)r[key]=wNum(m[1])};
+  pair('weight','Gewicht','kg');pair('bmr','BMR','kcal');pair('bone','Knochenmasse','kg');pair('muscle','Muskelmasse','kg');pair('visceral','Viszeralfett','');pair('lean','Magermasse','kg');pair('waterKg','Wassermasse','kg');
+  const fm=t.match(new RegExp('Fettmasse\\s+'+N+'\\s*(%|kg)\\s*Neueste'));if(fm){const v=wNum(fm[1]);r.fat=fm[2]==='%'?v:(r.weight?+(v/r.weight*100).toFixed(1):null)}
+  const ma=t.match(/(\d{1,3})\s*Jahre\s*Stoffwechselalter/);if(ma)r.metAge=+ma[1];
+  return r}
+let pdfLib=null;
+function loadPdfJs(){if(pdfLib)return pdfLib;pdfLib=new Promise((ok,bad)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  sc.onload=()=>{try{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'}catch(e){}ok(window.pdfjsLib)};sc.onerror=()=>{pdfLib=null;bad(new Error('pdf.js'))};document.head.appendChild(sc)});return pdfLib}
+async function importPdf(f){const lib=await loadPdfJs(),doc=await lib.getDocument({data:await f.arrayBuffer()}).promise;let txt='';
+  for(let i=1;i<=doc.numPages;i++){const c=await(await doc.getPage(i)).getTextContent();txt+=' '+c.items.map(x=>x.str).join(' ')}
+  const r=parseWithingsReport(txt);if(!r.weight||!r.date)return null;
+  const v={weight:+r.weight.toFixed(1)};if(r.fat!=null)v.fat=r.fat;if(r.muscle!=null)v.muscle=+r.muscle.toFixed(1);if(r.bone!=null)v.bone=+r.bone.toFixed(1);
+  if(r.waterKg!=null)v.water=+(r.waterKg/r.weight*100).toFixed(1);if(r.visceral!=null)v.visceral=r.visceral;if(r.bmr!=null)v.bmr=r.bmr;if(r.metAge!=null)v.metAge=r.metAge;
+  store.daily[r.date]=Object.assign({},store.daily[r.date],v);addDev('withings');return 'Withings-Bericht vom '+fromIso(r.date).toLocaleDateString('de-DE',{day:'numeric',month:'long'})}
 function importGarmin(o){if(!o||!Array.isArray(o.days))return null;
   const stress=v=>v==null?null:+(clamp(v,0,100)*3/100).toFixed(1);
   o.days.forEach(d=>{if(!d.date)return;const{date,...v}=d;if('stress'in v)v.stress=stress(v.stress);if(v.rec!=null)v.rec=Math.round(clamp(v.rec,0,100));
@@ -1037,10 +1060,11 @@ document.addEventListener('change',async e=>{
   if(e.target.id==='need'){const v=n(e.target.value);if(v&&v>=5&&v<=11){store.need=v;save();pickData();toast('Schlafbedarf gespeichert')}}
   else if(e.target.id==='age'){const v=n(e.target.value);if(v&&v>=10&&v<=100){store.age=Math.round(v);save();pickData();render();toast('Alter gespeichert')}}
   else if(e.target.id==='name'){store.name=e.target.value.trim()||'Bene';save();pickData();render()}
-  else if(e.target.id==='file'){const done=[];for(const f of e.target.files){try{const t=await f.text();const r=/^\s*\{/.test(t)?importGarmin(JSON.parse(t)):importRows(parseCSV(t));if(r)done.push(r)}catch(err){}}
+  else if(e.target.id==='file'){const done=[],files=[...e.target.files];const m0=$('#msg');if(m0){m0.className='msg';m0.textContent='Wird gelesen …'}
+    for(const f of files){try{let r=null;if(/\.pdf$/i.test(f.name)||f.type==='application/pdf')r=await importPdf(f);else{const t=await f.text();r=/^\s*\{/.test(t)?importGarmin(JSON.parse(t)):importRows(parseCSV(t))}if(r)done.push(r)}catch(err){console.error(err)}}
     e.target.value='';
     if(done.length){store.real=true;save();cur=null;pickData();render();const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.'}
-    else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Nimm den CSV-Export aus OpenStrap (Daily metrics, Sleep stages oder Workouts).'}}}
+    else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Erkannt werden Withings-Berichte (PDF) und weight.csv, garmin.json und der CSV-Export aus OpenStrap.'}}}
 });
 document.addEventListener('input',e=>{if(e.target.id==='wipeword'){const ok=e.target.value.trim().toUpperCase()==='LÖSCHEN',b=$('#wipe3');if(b){b.disabled=!ok;b.style.opacity=ok?1:.4}}});
 document.addEventListener('toggle',e=>{const g=e.target&&e.target.dataset&&e.target.dataset.g;if(g){if(e.target.open)moreOpen.add(g);else moreOpen.delete(g)}},true);
