@@ -217,6 +217,8 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .field input{width:130px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--fg);padding:10px;font:inherit;text-align:center}
 .steps-list{margin:0;padding:16px 16px 16px 36px;background:var(--card);border-radius:14px;color:var(--muted);line-height:1.55}
 .steps-list b{color:var(--fg);font-weight:600}
+.steps-list li+li{margin-top:8px}
+.cmd{display:inline-block;max-width:100%;overflow-x:auto;white-space:nowrap;vertical-align:bottom;margin-top:6px;font:13px ui-monospace,Menlo,monospace;color:var(--fg);background:var(--card-2);border-radius:6px;padding:4px 7px}
 .btn{display:block;width:100%;text-align:center;border-radius:12px;padding:15px;font-weight:800;font-size:13px;letter-spacing:.1em;margin-top:10px;cursor:pointer}
 .btn.w{background:#fff;color:#111}
 .btn.g{background:var(--card-2)}
@@ -300,7 +302,7 @@ nav svg{width:28px;height:28px}
 <main class="in" id="view"></main>
 <nav aria-label="Hauptnavigation"><div class="row" id="nav"></div></nav>
 <div class="sheet" id="sheet" hidden><div class="box" id="sheetBox" role="dialog" aria-modal="true"></div></div>
-<input id="file" type="file" accept=".csv,text/csv" multiple hidden>
+<input id="file" type="file" accept=".csv,.json,text/csv,application/json" multiple hidden>
 
 <script>
 (()=>{
@@ -371,6 +373,16 @@ function stageOf(v){const s=String(v).toLowerCase();
   if(s.includes('wake')||s.includes('awake'))return'wake';
   if(s.includes('deep')||s.includes('sws')||s.includes('n3'))return'deep';
   if(s.includes('rem'))return'rem';return'light'}
+function importGarmin(o){if(!o||!Array.isArray(o.days))return null;
+  const stress=v=>v==null?null:+(clamp(v,0,100)*3/100).toFixed(1);
+  o.days.forEach(d=>{if(!d.date)return;const{date,...v}=d;if('stress'in v)v.stress=stress(v.stress);if(v.rec!=null)v.rec=Math.round(clamp(v.rec,0,100));
+    if(v.sleep!=null&&v.bed&&v.up&&v.eff==null)v.eff=Math.round(v.sleep/((v.up-v.bed)/6e4)*100);
+    store.daily[date]=Object.assign({},store.daily[date],v,{src:'garmin'})});
+  Object.entries(o.sleep||{}).forEach(([d,l])=>{if(Array.isArray(l)&&l.length)store.sleep[d]=l.slice().sort((a,b)=>a[0]-b[0])});
+  const seen=new Set(store.workouts.map(w=>w.start));
+  (o.workouts||[]).forEach(w=>{if(!w.start||!w.date||seen.has(w.start))return;seen.add(w.start);store.workouts.push(Object.assign({},w,{strain:toStrain(wStrain(w.dur,w.avg)),src:'garmin'}))});
+  o.days.forEach(d=>{const x=store.daily[d.date];if(x&&(x.strain==null||x.strainAuto)){x.strain=estStrain(d.date);x.strainAuto=true}});
+  return o.days.length+' Tage aus Garmin'}
 function importRows(rows){
   if(!rows.length)return null;const h=Object.keys(rows[0]);
   const wk=h.find(x=>/^(weight|gewicht)/.test(x));
@@ -526,7 +538,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[k],jn=j?Object.keys(j)
     <button class="dial" data-go="belastung" aria-label="Belastung ${fmt(x.strain,1)}">${ring(x.strain==null?0:x.strain/21,'var(--strain)',{inner:rtext(110,fmt(x.strain,1),'',30)})}<span class="dlab">BELASTUNG ${I.chev}</span></button>
   </div>
   ${monitors(k)}
-  ${store.daily[iso(new Date())]?'':`<button class="prompt" data-act="entry" data-d="${iso(new Date())}">${I.plus}<span><b>WERTE FÜR HEUTE EINTRAGEN</b><span>Schlaf, HRV und Co. von deiner Garmin übernehmen</span></span></button>`}
+  ${store.daily[iso(new Date())]?'':`<button class="prompt" data-go="mehr">${I.plus}<span><b>WERTE FÜR HEUTE EINTRAGEN</b><span>Garmin-Datei importieren oder selbst eintragen</span></span></button>`}
   <div class="h-row"><h2 class="h1">Mein Tag</h2><button class="plus" data-go="logbuch" aria-label="Logbuch ausfüllen">${I.plus}</button></div>
   <button class="outlook" data-go="ausblick">${I.sun}<span>Täglicher Ausblick</span><span class="chev">${I.chev}</span></button>
   ${acts(k)}
@@ -733,14 +745,20 @@ function saveEntry(quiet){const{k,o,any}=readEntry(),hasW=store.workouts.some(w=
 function vMore(){return `<div class="sec" style="margin-top:22px"><span>Profil</span></div>
   <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
   <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>
+  <div class="sec"><span>Garmin automatisch</span></div>
+  <ol class="steps-list">
+    <li>Einmalig im <b>Terminal</b> auf dem Mac:<br><code class="cmd">pip3 install garminconnect</code><br><code class="cmd">curl -O https://raw.githubusercontent.com/benvoemel-a11y/Whoop/main/tools/garmin_export.py</code></li>
+    <li>Werte holen (beim ersten Mal mit Garmin-Login):<br><code class="cmd">python3 garmin_export.py</code></li>
+    <li>Hier unten <b>Datei auswählen</b> → iCloud Drive → Whoop → <b>garmin.json</b>.</li></ol>
+  <p class="about">Holt die letzten 30 Tage: Schlaf mit Phasen, HRV, Ruhepuls, Atemfrequenz, Stress, Trainingsbereitschaft als Erholung, Aktivitäten und Gewicht. Erneut importieren ist sicher, nichts wird doppelt gezählt.</p>
   <div class="sec"><span>Werte selbst eintragen</span></div>
-  <p class="about">Bis das Band da ist: Werte aus Garmin Connect übernehmen, Tag für Tag.</p>
-  <button class="btn w" data-act="entry">TAG EINTRAGEN</button>
+  <p class="about">Falls etwas fehlt, kannst du einzelne Tage auch von Hand ergänzen.</p>
+  <button class="btn g" data-act="entry">TAG EINTRAGEN</button>
   <div class="sec"><span>Gewicht aus Withings</span></div>
   <p class="about">Exportiere deine Daten in deinem Withings-Konto und wähle die Datei <b>weight.csv</b> unten aus. Gewicht und Körperfett landen dann im Dashboard.</p>
   <div class="sec"><span>Daten aus OpenStrap</span></div>
   <ol class="steps-list"><li>Band in der <b>OpenStrap-App</b> synchronisieren.</li><li>Dort den <b>CSV-Export</b> öffnen und „Daily metrics“, „Sleep stages“ und „Workouts“ exportieren.</li><li>Die Dateien hier auswählen. Vorhandene Tage werden aktualisiert, nichts wird doppelt gezählt.</li></ol>
-  <label class="btn w" for="file">CSV-DATEIEN AUSWÄHLEN (OPENSTRAP ODER WITHINGS)</label>
+  <label class="btn w" for="file">DATEI AUSWÄHLEN (GARMIN, WITHINGS, OPENSTRAP)</label>
   <div class="msg" id="msg" role="status"></div>
   <button class="btn g" data-act="demo">${store.real?'BEISPIELDATEN ANSEHEN':'BEISPIELDATEN WERDEN ANGEZEIGT'}</button>
   ${store.real?'':(Object.keys(store.daily).length?'<button class="btn g" data-act="mine">MEINE DATEN ANZEIGEN</button>':'')}
@@ -844,7 +862,7 @@ document.addEventListener('change',async e=>{
   if(e.target.id==='e_date'){entryDate=e.target.value;render();return}
   if(e.target.id==='need'){const v=n(e.target.value);if(v&&v>=5&&v<=11){store.need=v;save();pickData();toast('Schlafbedarf gespeichert')}}
   else if(e.target.id==='name'){store.name=e.target.value.trim()||'Bene';save();pickData();render()}
-  else if(e.target.id==='file'){const done=[];for(const f of e.target.files){try{const r=importRows(parseCSV(await f.text()));if(r)done.push(r)}catch(err){}}
+  else if(e.target.id==='file'){const done=[];for(const f of e.target.files){try{const t=await f.text();const r=/^\s*\{/.test(t)?importGarmin(JSON.parse(t)):importRows(parseCSV(t));if(r)done.push(r)}catch(err){}}
     e.target.value='';
     if(done.length){store.real=true;save();cur=null;pickData();render();const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.'}
     else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Nimm den CSV-Export aus OpenStrap (Daily metrics, Sleep stages oder Workouts).'}}}
