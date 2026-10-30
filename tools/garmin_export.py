@@ -48,8 +48,19 @@ def login():
             print("Gespeicherte Anmeldung abgelaufen, bitte neu anmelden.")
     email = input("Garmin-E-Mail: ").strip()
     pw = getpass.getpass("Garmin-Passwort (wird nicht angezeigt): ")
-    g = Garmin(email, pw, prompt_mfa=lambda: input("Code aus E-Mail/App: ").strip())
-    g.login(TOKENS)
+    mfa = lambda: input("Code aus E-Mail/App: ").strip()
+    try:
+        g = Garmin(email, pw, prompt_mfa=mfa)
+        g.login(TOKENS)
+    except TypeError:
+        # aeltere garminconnect-Version (z. B. mit Python 3.9)
+        g = Garmin(email, pw)
+        g.login()
+        try:
+            Path(TOKENS).mkdir(parents=True, exist_ok=True)
+            g.garth.dump(TOKENS)
+        except Exception:
+            pass
     return g
 
 
