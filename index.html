@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793325670";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793325794";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -697,7 +697,7 @@ function qRow(id,t,j,rm){const hid=isHid(id);return `<div class="q${hid?' qhid':
     ${id==='caffeine'&&j[id]===1?`<div class="subq"><span>Wie viele Portionen?</span><span class="step"><button data-act="step" data-q="caffeine_n" data-d="-1" aria-label="Weniger">–</button><b class="num">${j.caffeine_n||1}</b><button data-act="step" data-q="caffeine_n" data-d="1" aria-label="Mehr">+</button></span></div>`:''}`}
 function vJournal(k){const j=(data.journal&&data.journal[jKey(k)])||{},cq=store.customQ||[],have=new Set(cq.map(c=>c.t));
   const vis=qs=>jEdit?qs:qs.filter(([id])=>!isHid(id)),nh=(store.hiddenQ||[]).length;
-  return `<div class="ehead"><h2 class="jtitle">Was war ${jLabel(k)} los?</h2><button class="mini" data-act="jedit">${jEdit?'FERTIG':'BEARBEITEN'} ${jEdit?'':I.pencil}</button></div><p class="jsub">${jEdit?'Blende Fragen aus, die du nicht brauchst. Ausgeblendete Fragen tauchen im Logbuch und auf der Startseite nicht mehr auf.':fromIso(jKey(k)).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})+' · morgens für den Vortag ausfüllen'+(nh?` · ${nh} ausgeblendet`:'')}</p>
+  return `<div class="ehead"><h2 class="jtitle">Was war ${jLabel(k)} los?</h2><button class="mini" data-act="jedit">${jEdit?'FERTIG':'BEARBEITEN'} ${jEdit?'':I.pencil}</button></div><p class="jsub">${jEdit?'Blende Fragen aus, die du nicht brauchst. Ausgeblendete Fragen tauchen im Logbuch und auf der Startseite nicht mehr auf.':fromIso(jKey(k)).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})+(nh?` · ${nh} ausgeblendet`:'')}</p>
   ${CATS.map(g=>{const std=(JQ.find(x=>x[0]===g)||[0,[]])[1].map(q=>[...q,false]),cus=cq.filter(c=>qCat(c)===g).map(c=>[c.id,c.t,true]),qs=vis([...std,...cus]);
     return qs.length?`<div class="jgrp">${g}</div>${qs.map(([id,t,isC])=>qRow(id,t,j,jEdit?(isC?true:'hide'):false)).join('')}`:''}).join('')}
   <div class="jgrp2"><span>FRAGE HINZUFÜGEN</span></div>
