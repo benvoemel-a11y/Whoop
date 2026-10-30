@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793327534";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793329930";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -268,6 +268,8 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .gb .field,.gb .tog{background:var(--card-2)}
 .gb .steps-list{background:var(--card-2)}
 .btn[disabled]{cursor:default}
+.cfgbox{width:100%;height:64px;margin-top:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--muted);font:11px ui-monospace,Menlo,monospace;padding:8px;resize:none;-webkit-user-select:text;user-select:text}
+.lnk{color:var(--link);font-weight:600}
 .prompt-w{position:relative}
 .prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
 .prompt-x svg{width:16px;height:16px}
@@ -920,6 +922,29 @@ function vAge(k){const b=bioAge(k),p=pace(k);
   <div class="field"><label for="age">Dein Alter</label><input id="age" inputmode="numeric" value="${b.A}"></div>`}
 const moreOpen=new Set();
 function grp(id,title,sub,body){return `<details class="grp" data-g="${id}" ${moreOpen.has(id)?'open':''}><summary><span><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span><span class="gch">${I.chev}</span></summary><div class="gb">${body}</div></details>`}
+const pushOk=()=>'serviceWorker'in navigator&&'PushManager'in window&&'Notification'in window;
+function pushSub(){if(!store.push)return 'Erinnerungen um 7, 14 und 22 Uhr';return store.pushSaved?'Aktiv · 7, 14 und 22 Uhr':'Fast fertig: Schlüssel auf GitHub speichern'}
+function pushBody(){
+  if(!pushOk())return `<p class="about" style="margin-top:0">Benachrichtigungen funktionieren nur, wenn du die App über das Icon auf dem Home-Bildschirm öffnest (ab iOS 16.4). In Safari selbst geht es nicht.</p>`;
+  if(!store.push)return `<p class="about" style="margin-top:0">Die App erinnert dich um <b>7, 14 und 22 Uhr</b> ans Importieren und am <b>1. jedes Monats</b> an deinen Withings-Bericht.</p><button class="btn w" data-act="pushon">BENACHRICHTIGUNGEN AKTIVIEREN</button><div class="msg" id="pmsg" role="status"></div>`;
+  return `<ol class="steps-list" style="margin-top:0">
+    <li><b>Schlüssel kopieren:</b><button class="btn w" data-act="pushcopy" style="margin-top:8px">SCHLÜSSEL KOPIEREN</button><textarea id="pushcfg" readonly class="cfgbox" aria-label="Schlüssel">${esc(store.push)}</textarea></li>
+    <li><b>Auf GitHub speichern:</b> <a class="lnk" href="https://github.com/benvoemel-a11y/Whoop/settings/secrets/actions/new" target="_blank" rel="noopener">diesen Link öffnen</a>, bei <b>Name</b> <code class="cmd">PUSH_CONFIG</code> eintragen, bei <b>Secret</b> einfügen, <b>Add secret</b> tippen.</li>
+    <li><b>Testen:</b> <a class="lnk" href="https://github.com/benvoemel-a11y/Whoop/actions/workflows/erinnerungen.yml" target="_blank" rel="noopener">diesen Link öffnen</a> → <b>Run workflow</b> → grüner Knopf <b>Run workflow</b>. Nach ca. 1 Minute kommt „Test“ aufs Handy.</li></ol>
+    ${store.pushSaved?'':'<button class="btn g" data-act="pushsaved">ERLEDIGT, IST GESPEICHERT</button>'}
+    <button class="btn warn" data-act="pushoff">BENACHRICHTIGUNGEN AUSSCHALTEN</button><div class="msg" id="pmsg" role="status"></div>`}
+const b64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+async function pushOn(){const m=()=>$('#pmsg'),say=(t,err)=>{const x=m();if(x){x.className='msg'+(err?' err':'');x.textContent=t}};
+  try{const perm=await Notification.requestPermission();if(perm!=='granted'){say('Benachrichtigungen wurden nicht erlaubt. Du kannst das in den iPhone-Einstellungen unter Mitteilungen ändern.',1);return}
+    const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;
+    const old=await reg.pushManager.getSubscription();if(old)await old.unsubscribe();
+    const kp=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign']);
+    const jwk=await crypto.subtle.exportKey('jwk',kp.privateKey),raw=await crypto.subtle.exportKey('raw',kp.publicKey);
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:new Uint8Array(raw)});
+    store.push=JSON.stringify({sub:sub.toJSON(),pub:b64u(raw),priv:jwk.d});store.pushSaved=false;save();moreOpen.add('push');render();toast('Erlaubt. Jetzt Schlüssel kopieren.')}
+  catch(e){say('Das hat nicht geklappt: '+(e&&e.message||e)+'. Öffne die App über das Icon auf dem Home-Bildschirm.',1)}}
+async function pushOff(){try{const reg=await navigator.serviceWorker.getRegistration();const sub=reg&&await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe()}catch(e){}
+  store.push=null;store.pushSaved=false;save();render();toast('Benachrichtigungen aus')}
 function vMore(){const nd=Object.keys(store.daily||{}).length;
   return `<div class="morehead"><span class="avatar big" style="background:${avc()};color:${avtx(avc())}">${esc((store.name||'B')[0].toUpperCase())}</span><span class="dtx"><b style="font-size:20px">${esc(store.name||'Bene')}</b><span>${store.real?nd+' Tage mit eigenen Daten':'Beispieldaten aktiv'}</span></span></div>
   ${grp('profil','Profil','Name, Alter, Farbe, Schlafbedarf',`
@@ -927,6 +952,7 @@ function vMore(){const nd=Object.keys(store.daily||{}).length;
     <div class="field"><label for="name">Name</label><input id="name" value="${esc(store.name||'')}" maxlength="20" autocomplete="off"></div>
     <div class="field"><label for="age">Alter</label><input id="age" inputmode="numeric" value="${esc(store.age||'')}" placeholder="Jahre"></div>
     <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>`)}
+  ${grp('push','Benachrichtigungen',pushSub(),pushBody())}
   ${grp('import','Daten importieren','Garmin, Withings, OpenStrap',`
     <label class="btn w" for="file" style="margin-top:0">DATEI AUSWÄHLEN</label>
     <label class="btn g" for="file">WITHINGS IMPORTIEREN</label>
@@ -1033,6 +1059,11 @@ function act(a,el){
   else if(a==='devopen'){devOpen=devOpen===el.dataset.t?null:el.dataset.t;render()}
   else if(a==='devreset'){store.devices={};save();render()}
   else if(a==='avcol'){store.avColor=el.dataset.c;save();render()}
+  else if(a==='pushon')pushOn();
+  else if(a==='pushoff')pushOff();
+  else if(a==='pushsaved'){store.pushSaved=true;save();render();toast('Benachrichtigungen aktiv')}
+  else if(a==='pushcopy'){const t=store.push||'';const done=()=>toast('Schlüssel kopiert');
+    try{navigator.clipboard.writeText(t).then(done,()=>{const x=$('#pushcfg');if(x){x.select();x.setSelectionRange(0,99999)}toast('Text markiert: jetzt Kopieren tippen')})}catch(e){const x=$('#pushcfg');if(x){x.select()}}}
   else if(a==='togglegarmin'){store.hideGarmin=!store.hideGarmin;save();render()}
   else if(a==='entry'){entryDate=el.dataset.d||(store.real&&cur&&store.daily[cur]?cur:iso(new Date()));go('eintragen')}
   else if(a==='addw'){const k=saveEntry(true),dur=n($('#a_dur').value),avg=n($('#a_avg').value),[h,m]=($('#a_start').value||'17:00').split(':').map(Number);

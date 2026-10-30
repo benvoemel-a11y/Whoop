@@ -1,0 +1,27 @@
+name: Erinnerungen
+
+on:
+  schedule:
+    # Doppelte UTC-Zeiten, damit es im Winter (UTC+1) und Sommer (UTC+2) passt.
+    # Das Skript prüft selbst die Uhrzeit in Berlin.
+    - cron: '5 5,6,12,13,20,21 * * *'
+    - cron: '0 8,9 1 * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'test = sofort eine Test-Benachrichtigung schicken'
+        default: 'test'
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-save web-push@3.6.7
+      - run: node tools/push_senden.js
+        env:
+          PUSH_CONFIG: ${{ secrets.PUSH_CONFIG }}
+          MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || (github.event.schedule == '0 8,9 1 * *' && 'monthly' || 'auto') }}
