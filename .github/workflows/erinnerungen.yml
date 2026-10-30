@@ -1,5 +1,5 @@
 name: Erinnerungen
-
+# Bene
 on:
   schedule:
     # Alle 15 Minuten; das Skript prüft selbst, welche Erinnerung in Berlin gerade fällig ist.
