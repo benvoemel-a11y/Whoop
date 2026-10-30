@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793356134";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793356334";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -612,7 +612,8 @@ const SPORT={running:['LAUFEN','run'],run:['LAUFEN','run'],walking:['GEHEN','wal
 function sleepRow(k){const ni=nightInfo(k),x=D(k);if(!ni&&x.sleep==null)return'';
   return `<div class="act"><div class="badge" style="background:var(--sleep)">${I.moon}<span>${hm(x.sleep??(ni.bed-ni.by.wake))}</span></div><div class="act-n">SCHLAF</div>
   <div class="act-t">${ni?`<span>${tm(ni.s)}</span><span>${tm(ni.e)}</span>`:x.bed&&x.up?`<span>${tm(x.bed)}</span><span>${tm(x.up)}</span>`:''}</div><i class="act-b" style="background:var(--sleep)"></i></div>`}
-function workRows(k){return data.workouts.filter(w=>w.date===k).sort((a,b)=>a.start-b.start).map(w=>{
+const NOSPORT=['walking','walk','casual_walking'];
+function workRows(k){return data.workouts.filter(w=>w.date===k&&!NOSPORT.includes(String(w.type).toLowerCase())).sort((a,b)=>a.start-b.start).map(w=>{
   const sp=SPORT[String(w.type).toLowerCase()]||[String(w.type||'Aktivität').toUpperCase(),'bolt'];
   return `<div class="act"><div class="badge" style="background:var(--strain)">${I[sp[1]]}<span>${fmt(w.strain,1)}</span></div><div class="act-n">${sp[0]}</div>
   <div class="act-t"><span>${tm(w.start)}</span><span>${w.end?tm(w.end):fmt(w.dur)+' min'}</span></div><i class="act-b" style="background:var(--strain)"></i></div>`}).join('')}
