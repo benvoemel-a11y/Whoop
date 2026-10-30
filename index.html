@@ -233,6 +233,11 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .devh{display:flex;align-items:center;gap:14px;width:100%}
 .dch{width:20px;display:grid;color:var(--muted)}
 .devc .steps-list{background:var(--card-2);margin-top:12px}
+.qhid>span:first-child{opacity:.4;text-decoration:line-through}
+.hidb{height:36px;padding:0 12px;border-radius:7px;background:var(--card-2);color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em}
+.hidb.on{color:var(--fg)}
+.yn button.hidb{width:auto;padding:0 12px;display:block;white-space:nowrap;background:var(--card-2)}
+.yn button.hidb.on{color:var(--fg)}
 .prompt-w{position:relative}
 .prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
 .prompt-x svg{width:16px;height:16px}
@@ -665,16 +670,18 @@ const JQ=[['ERHOLUNG',[['cold','Eine kalte Dusche genommen?'],['sauna','In der S
   ['NAHRUNGSERGÄNZUNG',[['creatine','Kreatin eingenommen?']]],
   ['SCHLAF',[['samebed','Im selben Bett wie sonst geschlafen?']]]];
 const SUGG=['Meditiert?','Gedehnt oder Mobility gemacht?','Nach 20 Uhr trainiert?','Zucker gegessen?','Mittagsschlaf gemacht?','Draußen in der Sonne gewesen?','Magnesium genommen?','Krank oder angeschlagen?','Lange am Bildschirm gearbeitet?','Mit Freunden getroffen?','Gelernt oder Prüfungsstress?','Viel gesessen?'];
-const allQ=()=>[...JQ.flatMap(([,qs])=>qs),...(store.customQ||[]).map(c=>[c.id,c.t])];
-function qRow(id,t,j,rm){return `<div class="q"><span>${esc(t)}</span><span class="yn">
-    ${rm?`<button class="rm" data-act="rmq" data-q="${id}" aria-label="Frage entfernen">${I.x}</button>`:`<button class="no" data-act="yn" data-q="${id}" data-v="0" aria-pressed="${j[id]===0}" aria-label="Nein">${I.x}</button>
+const isHid=id=>(store.hiddenQ||[]).includes(id);
+const allQ=()=>[...JQ.flatMap(([,qs])=>qs),...(store.customQ||[]).map(c=>[c.id,c.t])].filter(([id])=>!isHid(id));
+function qRow(id,t,j,rm){const hid=isHid(id);return `<div class="q${hid?' qhid':''}"><span>${esc(t)}</span><span class="yn">
+    ${rm==='hide'?`<button class="hidb${hid?'':' on'}" data-act="hideq" data-q="${id}">${hid?'EINBLENDEN':'AUSBLENDEN'}</button>`:rm?`<button class="hidb${hid?'':' on'}" data-act="hideq" data-q="${id}">${hid?'EINBLENDEN':'AUSBLENDEN'}</button><button class="rm" data-act="rmq" data-q="${id}" aria-label="Frage löschen">${I.x}</button>`:`<button class="no" data-act="yn" data-q="${id}" data-v="0" aria-pressed="${j[id]===0}" aria-label="Nein">${I.x}</button>
     <button class="yes" data-act="yn" data-q="${id}" data-v="1" aria-pressed="${j[id]===1}" aria-label="Ja">${I.check}</button>`}</span></div>
     ${id==='caffeine'&&j[id]===1?`<div class="subq"><span>Wie viele Portionen?</span><span class="step"><button data-act="step" data-q="caffeine_n" data-d="-1" aria-label="Weniger">–</button><b class="num">${j.caffeine_n||1}</b><button data-act="step" data-q="caffeine_n" data-d="1" aria-label="Mehr">+</button></span></div>`:''}`}
 function vJournal(k){const j=(data.journal&&data.journal[k])||{},cq=store.customQ||[],have=new Set(cq.map(c=>c.t));
-  return `<h2 class="jtitle">Was war los?</h2><p class="jsub">${fromIso(k).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</p>
-  ${JQ.map(([g,qs])=>`<div class="jgrp">${g}</div>${qs.map(([id,t])=>qRow(id,t,j)).join('')}`).join('')}
-  <div class="jgrp2"><span>EIGENE FRAGEN</span>${cq.length?`<button class="mini" data-act="jedit">${jEdit?'FERTIG':'BEARBEITEN'}</button>`:''}</div>
-  ${cq.map(c=>qRow(c.id,c.t,j,jEdit)).join('')||'<p class="hint">Noch keine eigenen Fragen. Schreib eine eigene oder tippe auf einen Vorschlag.</p>'}
+  const vis=qs=>jEdit?qs:qs.filter(([id])=>!isHid(id)),nh=(store.hiddenQ||[]).length;
+  return `<div class="ehead"><h2 class="jtitle">Was war los?</h2><button class="mini" data-act="jedit">${jEdit?'FERTIG':'BEARBEITEN'} ${jEdit?'':I.pencil}</button></div><p class="jsub">${jEdit?'Blende Fragen aus, die du nicht brauchst. Ausgeblendete Fragen tauchen im Logbuch und auf der Startseite nicht mehr auf.':fromIso(k).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})+(nh?` · ${nh} ausgeblendet`:'')}</p>
+  ${JQ.map(([g,qs])=>vis(qs).length?`<div class="jgrp">${g}</div>${vis(qs).map(([id,t])=>qRow(id,t,j,jEdit?'hide':false)).join('')}`:'').join('')}
+  <div class="jgrp2"><span>EIGENE FRAGEN</span></div>
+  ${vis(cq.map(c=>[c.id,c.t])).map(([id,t])=>qRow(id,t,j,jEdit)).join('')||'<p class="hint">Noch keine eigenen Fragen. Schreib eine eigene oder tippe auf einen Vorschlag.</p>'}
   <div class="addq"><input id="newq" placeholder="Eigene Frage, z. B. Meditiert?" maxlength="60" autocomplete="off" aria-label="Eigene Frage"><button class="plus" data-act="addq" aria-label="Frage hinzufügen">${I.plus}</button></div>
   <div class="chips">${SUGG.filter(t=>!have.has(t)).slice(0,6).map(t=>`<button class="chipq" data-act="sugg" data-t="${esc(t)}">+ ${t}</button>`).join('')}</div>
   <button class="cta" data-act="jsave">LOGBUCH SPEICHERN</button>`}
@@ -882,7 +889,8 @@ function act(a,el){
   else if(a==='mrange'){mRange=+el.dataset.r;render()}
   else if(a==='addq'){const i=$('#newq');addQ(i&&i.value)}
   else if(a==='sugg')addQ(el.dataset.t);
-  else if(a==='rmq'){store.customQ=(store.customQ||[]).filter(c=>c.id!==el.dataset.q);save();if(data!==store)data.customQ=store.customQ;if(!store.customQ.length)jEdit=false;render()}
+  else if(a==='rmq'){store.customQ=(store.customQ||[]).filter(c=>c.id!==el.dataset.q);store.hiddenQ=(store.hiddenQ||[]).filter(x=>x!==el.dataset.q);save();if(data!==store)data.customQ=store.customQ;render()}
+  else if(a==='hideq'){const q=el.dataset.q,h=store.hiddenQ=store.hiddenQ||[];const i=h.indexOf(q);if(i>=0)h.splice(i,1);else h.push(q);save();render()}
   else if(a==='jedit'){jEdit=!jEdit;render()}
   else if(a==='hidegarmin'){store.hideGarmin=true;save();render();toast('Ausgeblendet. Unter „Mehr“ wieder einschaltbar.')}
   else if(a==='devopen'){devOpen=devOpen===el.dataset.t?null:el.dataset.t;render()}
