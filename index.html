@@ -210,7 +210,7 @@ function demo(){
     const d=new Date(today);d.setDate(d.getDate()-i);const k=iso(d);
     const sleep=Math.round(380+rnd()*130),deep=Math.round(sleep*(.15+rnd()*.08)),rem=Math.round(sleep*(.2+rnd()*.07));
     const hrv=Math.round(58+rnd()*34),rhr=Math.round(48+rnd()*8);
-    const rec=Math.max(8,Math.min(99,Math.round((hrv-55)*1.6+(sleep-380)/3+(56-rhr)*2+25+rnd()*12)));
+    const rec=Math.max(8,Math.min(99,Math.round((hrv-55)*1.6+(sleep-380)/3+(56-rhr)*2-5+rnd()*30)));
     const run=rnd()>.45,str=run?+(9+rnd()*8).toFixed(1):+(4+rnd()*5).toFixed(1);
     st.daily[k]={rec,rhr,hrv,resp:+(14+rnd()*1.6).toFixed(1),strain:str,kcal:Math.round(2100+str*55),akcal:Math.round(str*55),
       sleep,deep,rem,light:sleep-deep-rem,eff:Math.round(86+rnd()*10),steps:Math.round(7000+rnd()*7000)};
@@ -218,7 +218,7 @@ function demo(){
     const bed=new Date(d);bed.setDate(bed.getDate()-1);bed.setHours(23,10+Math.round(rnd()*40),0,0);
     let t=bed.getTime();const end=t+(sleep+Math.round(sleep*.06))*60000;const l=[];
     while(t<end){const cyc=Math.min(end,t+90*60000);const prog=(t-bed.getTime())/(end-bed.getTime());
-      const parts=[['light',.35],['deep',prog<.5?.3:.08],['light',.2],['rem',prog<.5?.12:.3],['wake',.03]];
+      const parts=[['light',.35],['deep',prog<.5?.3:.08],['light',.2],['rem',prog<.5?.12:.3],['wake',.06]];
       const tot=parts.reduce((a,p)=>a+p[1],0);
       for(const[s,w]of parts){const len=(cyc-t)*w/tot;if(len<60000)continue;l.push([t,t+len,s]);t+=len}t=cyc}
     st.sleep[k]=l;
