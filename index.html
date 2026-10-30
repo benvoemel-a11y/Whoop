@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793357790";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793360290";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -280,6 +280,14 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var
 .mini-tog{background:none!important;padding:0!important;width:auto}
 .savebox{border:1px solid var(--yellow);border-radius:12px;padding:12px;margin-top:14px}
 .savebox b{color:var(--yellow);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.dord{display:flex;align-items:center;gap:8px}
+.dord .tog{flex:1;min-width:0}
+.arr{display:flex;flex-direction:column;gap:4px}
+.arr button{width:36px;height:24px;border-radius:6px;background:var(--card);display:grid;place-items:center;color:var(--fg)}
+.arr button svg{width:12px;height:12px}
+.arr button:first-child svg{transform:rotate(-90deg)}
+.arr button:last-child svg{transform:rotate(90deg)}
+.arr button:disabled{opacity:.25}
 .prompt-w{position:relative}
 .prompt-x{position:absolute;top:22px;right:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted)}
 .prompt-x svg{width:16px;height:16px}
@@ -655,7 +663,9 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.k
     ${allQ().filter(([id])=>!(id in (j||{}))).slice(0,3).map(([id,t])=>qRow(id,t,j||{})).join('')}
     <button class="linkb" data-go="logbuch">ALLE FRAGEN BEANTWORTEN ${I.chev}</button></div>`}
   <div class="h-row"><h2 class="h1">Mein Dashboard</h2><button class="mini" data-act="dash-edit">${editDash?'FERTIG':'PERSONALISIEREN'} ${I.pencil}</button></div>
-  ${editDash?`<div class="dash-edit">${['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress','weight','fat'].map(m=>`<button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="${data.dash.includes(m)}"><span>${MET[m].n}</span><span class="sw"></span></button>`).join('')}</div>`
+  ${editDash?`<div class="dash-edit"><p class="hint" style="margin:0 0 4px">Reihenfolge mit den Pfeilen ändern, mit dem Schalter ein- und ausblenden.</p>${(()=>{const all=['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress','weight','fat'],on=store.dash.filter(m=>all.includes(m)),off=all.filter(m=>!on.includes(m));
+    return on.map((m,i)=>`<div class="dord"><div class="arr"><button data-act="dash-up" data-k="${m}" aria-label="Nach oben" ${i===0?'disabled':''}>${I.chev}</button><button data-act="dash-down" data-k="${m}" aria-label="Nach unten" ${i===on.length-1?'disabled':''}>${I.chev}</button></div><button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="true"><span>${MET[m].n}</span><span class="sw"></span></button></div>`).join('')
+      +(off.length?`<p class="hint" style="margin:10px 0 4px">Ausgeblendet</p>`:'')+off.map(m=>`<button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="false"><span>${MET[m].n}</span><span class="sw"></span></button>`).join('')})()}</div>`
   :data.dash.map(m=>mrow(m,k)).join('')}`}
 
 function vOverview(k){const x=D(k),p=perf(k),s=160;
@@ -1144,6 +1154,7 @@ function act(a,el){
   else if(a==='esave'){const k=saveEntry(false);entryDate=null;toast('Tag gespeichert');cur=days().includes(k)?k:cur;view='home';prevView='home';try{history.replaceState(null,'','#home')}catch(e){}render();window.scrollTo(0,0)}
   else if(a==='close')$('#sheet').hidden=true;
   else if(a==='dash-edit'){editDash=!editDash;render()}
+  else if(a==='dash-up'||a==='dash-down'){const k=el.dataset.k,i=store.dash.indexOf(k),j=i+(a==='dash-up'?-1:1);if(i>=0&&j>=0&&j<store.dash.length){[store.dash[i],store.dash[j]]=[store.dash[j],store.dash[i]];save();if(data!==store)data.dash=store.dash;render()}}
   else if(a==='dash-tog'){const k=el.dataset.k,i=store.dash.indexOf(k);if(i>=0)store.dash.splice(i,1);else store.dash.push(k);save();if(data!==store)data.dash=store.dash;render()}
   else if(a==='yn')journalSet(el.dataset.q,+el.dataset.v);
   else if(a==='step'){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};j.caffeine_n=clamp((j.caffeine_n||1)+(+el.dataset.d),1,10);save();render()}
