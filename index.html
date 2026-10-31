@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793473962";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793474404";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -459,6 +459,23 @@ button.t-row{padding:14px}
 .t-feel{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.t-feel button{background:var(--card);border-radius:10px;padding:11px 0;font-size:14px;font-weight:600;color:var(--muted)}.t-feel button[aria-pressed="true"]{background:#fff;color:#111}
 .t-note{width:100%;margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--fg);padding:12px;font:inherit;resize:none}
 .t-hx{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}.t-hx span{color:var(--muted);text-align:right;font-family:var(--num)}
+
+.t-list{background:var(--card);border-radius:14px;overflow:hidden}
+.t-li{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 14px;border-bottom:1px solid var(--line);font-size:16px;font-weight:600}
+.t-li:last-child{border-bottom:0}
+.t-li[aria-pressed="true"] .t-lin{color:var(--mint)}
+.t-lic{width:34px;height:34px;border-radius:10px;background:var(--card-2);display:grid;place-items:center;flex:none}.t-lic svg{width:20px;height:20px}
+.t-lic.k{background:rgba(245,163,58,.15);color:var(--s-high)}.t-lic.a{background:rgba(0,147,231,.15);color:var(--strain)}
+.t-lin{flex:1;min-width:0}.t-lin b{display:block;font-size:16px}.t-lin small{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:2px}
+.t-lik{width:20px;height:20px;color:var(--muted);flex:none;display:grid;place-items:center}.t-lik svg{width:16px;height:16px}
+.t-li[aria-pressed="true"] .t-lik{color:var(--mint)}
+.t-li.big{padding:16px 14px}.t-li.big .t-lic{width:44px;height:44px;border-radius:12px}.t-li.big .t-lic svg{width:24px;height:24px}
+.t-lg{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin:18px 0 8px}
+.t-lg:first-child{margin-top:0}
+.t-kind{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-top:14px;padding:6px 12px;border-radius:999px;border:1px solid}
+.t-kind svg{width:16px;height:16px}.t-kind.k{color:var(--s-high)}.t-kind.a{color:var(--strain)}
+.t-row>.t-bar{margin:10px 0}
+.addq .btn svg{width:18px;height:18px;display:block;margin:auto}
 </style>
 </head>
 <body>
@@ -1163,6 +1180,10 @@ const EX_DEF=['Kniebeuge','Beinpresse','Rumänisches Kreuzheben','Kreuzheben','A
 const SP_DEF=['Laufen','Radfahren','Schwimmen','Wandern','Rudern','Spinning','Crosstrainer','Seilspringen','Yoga'];
 const TIMED=['Plank','Seitstütz'];
 const FEEL=['Schlapp','Okay','Gut','Stark'];
+const EXG=[['Beine',['Kniebeuge','Beinpresse','Rumänisches Kreuzheben','Kreuzheben','Ausfallschritte','Beinstrecker','Beinbeuger','Hip Thrust','Wadenheben']],['Brust',['Bankdrücken','Schrägbankdrücken','Dips','Liegestütze']],['Rücken',['Klimmzüge','Latzug','Rudern am Kabel','Langhantelrudern','Rückenstrecker']],['Schultern',['Schulterdrücken','Seitheben']],['Arme',['Bizepscurls','Trizepsdrücken']],['Rumpf',['Plank','Seitstütz','Crunches','Russian Twist','Dead Bug','Beinheben']]];
+const SPI={Laufen:'run',Radfahren:'bike',Spinning:'bike',Schwimmen:'swim',Wandern:'walk',Yoga:'yoga',Seilspringen:'bolt',Crosstrainer:'run',Rudern:'pulse'};
+const spIc=n=>I[SPI[n]||'pulse'];
+const rType=r=>r&&r.type==='a'?'a':'k';
 const TV={training:'TRAINING',routine:'ROUTINE',plan:'WOCHENPLAN',lib:'ÜBUNGEN',fertig:'GESCHAFFT'};
 const TBACK={routine:'training',plan:'training',lib:'training',workout:'training',fertig:'workout'};
 let tRid=null,tOpen=-1;const REST=90;
@@ -1175,9 +1196,9 @@ const routines=()=>store.routines||(store.routines=[]);
 const rById=id=>routines().find(r=>r.id===id);
 function planOf(d){store.plan=store.plan||{};return store.plan[d]||(store.plan[d]=[])}
 const sessions=()=>store.sess||(store.sess=[]);
-const itName=o=>o.t==='k'?((rById(o.rid)||{}).name||'Routine gelöscht'):o.sp+(o.ti?' · '+o.ti:'');
-const itDone=(o,k)=>sessions().some(s=>s.date===k&&(o.t==='k'?s.type==='k'&&s.rid===o.rid:s.type==='a'&&s.sp===o.sp));
-const rMeta=r=>{const v=r.items.filter(i=>!i.h).length;const ds=WDN.filter((n,i)=>planOf(i).some(o=>o.t==='k'&&o.rid===r.id));return (ds.length?ds.join(', ')+' · ':'')+v+' Übung'+(v===1?'':'en')};
+const itName=o=>o.rid?((rById(o.rid)||{}).name||'Routine gelöscht'):o.sp+(o.ti?' · '+o.ti:'');
+const itDone=(o,k)=>sessions().some(s=>s.date===k&&(o.rid?s.rid===o.rid:s.type==='a'&&!s.rid&&s.sp===o.sp));
+const rMeta=r=>{const ds=WDN.filter((n,i)=>planOf(i).some(o=>o.rid===r.id)),pre=ds.length?ds.join(', ')+' · ':'';if(rType(r)==='a')return pre+r.sp;const v=r.items.filter(i=>!i.h).length;return pre+v+' Übung'+(v===1?'':'en')};
 const iMeta=i=>i.s+' × '+i.r+(i.u==='s'?' s':'')+(i.kg?' · '+kgf(i.kg)+' kg':'');
 function lastSets(n,skip){const ss=sessions();for(let i=ss.length-1;i>=0;i--){if(ss[i].id===skip)continue;const e=(ss[i].ex||[]).find(x=>x.n===n);if(e&&e.sets.length)return e.sets}return null}
 function bestKg(n,skip){let m=null;sessions().forEach(s=>{if(s.id===skip)return;(s.ex||[]).forEach(e=>{if(e.n===n)e.sets.forEach(x=>{if(x.kg!=null&&(m==null||x.kg>m))m=x.kg})})});return m}
@@ -1190,9 +1211,9 @@ function tHome(k){const it=planOf(wdOf(k));if(!it.length)return '';const td=k===
 function vTraining(){const t=iso(new Date()),wd=wdOf(t),pl=planOf(wd),x=D(t),a=store.act;
   const strip=`<div class="t-wk">${WDN.map((n,i)=>{const it=planOf(i);return `<button class="t-wd ${i===wd?'on':''}" data-act="t-planday" data-d="${i}" aria-label="${WDL[i]} planen"><span>${n}</span><span class="t-dots">${it.length?it.slice(0,3).map(o=>`<i class="t-dot ${o.t}"></i>`).join(''):'<i class="t-dot"></i>'}</span></button>`}).join('')}</div>`;
   const live=a?`<button class="card t-live" data-go="${a.t1?'fertig':'workout'}"><span><small>TRAINING LÄUFT</small><b>${esc(a.name)}</b></span><span class="t-livec"><b class="num" id="t-clk2">${mmss(elapsed(a))}</b><small>FORTSETZEN ${I.chev}</small></span></button>`:'';
-  const today=pl.length?pl.map((o,i)=>{const d=itDone(o,t),r=o.t==='k'?rById(o.rid):null;
+  const today=pl.length?pl.map((o,i)=>{const d=itDone(o,t),r=o.t==='k'&&o.rid?rById(o.rid):null,ra=o.t==='a'&&o.rid?rById(o.rid):null;
     return `<div class="card t-today ${d?'done':''}"><div class="t-th"><small>HEUTE · ${WDL[wd].toUpperCase()}</small>${d?`<span class="t-ok">${I.check}</span>`:`<span class="t-pill ${o.t}">${o.t==='k'?'Kraft':'Ausdauer'}</span>`}</div>
-      <b class="t-big">${esc(itName(o))}</b><span class="t-meta">${o.t==='k'?(r?r.items.filter(z=>!z.h).length+' Übungen':''):''}${o.note?(o.t==='k'&&r?' · ':'')+esc(o.note):''}</span>
+      <b class="t-big">${esc(itName(o))}</b><span class="t-meta">${[r?r.items.filter(z=>!z.h).length+' Übungen':'',ra?ra.sp:'',ra&&ra.desc?esc(ra.desc):'',o.note?esc(o.note):''].filter(Boolean).join(' · ')}</span>
       ${!d&&i===pl.findIndex(z=>!itDone(z,t))&&x.rec!=null?`<div class="t-goal"><span>Erholung <b style="color:${recCol(x.rec)}">${x.rec} %</b></span><span>Belastungsziel <b style="color:var(--strain)">${target(x.rec)}</b></span></div>`:''}
       ${d?'<span class="t-meta" style="display:block;margin-top:6px;color:var(--mint)">Erledigt</span>':a?'':`<button class="btn w" data-act="t-start" data-d="${wd}" data-i="${i}">TRAINING STARTEN</button>`}</div>`}).join('')
     :`<div class="card t-today"><small class="t-sm">HEUTE · ${WDL[wd].toUpperCase()}</small><b class="t-big" style="color:var(--muted)">Ruhetag</b><span class="t-meta">Nichts geplant. Du kannst trotzdem frei trainieren.</span></div>`;
@@ -1201,7 +1222,7 @@ function vTraining(){const t=iso(new Date()),wd=wdOf(t),pl=planOf(wd),x=D(t),a=s
   <div class="sec"><span>Freies Training</span></div>
   <div class="t-two"><button class="t-free" data-act="t-free-k" ${a?'disabled':''}>${I.lift}<span>Kraft</span></button><button class="t-free" data-act="t-free-a" ${a?'disabled':''}>${I.run}<span>Ausdauer</span></button></div>
   <div class="sec"><span>Meine Routinen</span></div>
-  ${routines().map(r=>`<div class="t-row"><button class="t-rowm" data-act="t-redit" data-id="${r.id}"><b>${esc(r.name)}</b><small>${esc(rMeta(r))}</small></button>${a?'':`<button class="t-play" data-act="t-rstart" data-id="${r.id}" aria-label="${esc(r.name)} starten">START</button>`}</div>`).join('')||'<p class="hint" style="margin-top:0">Noch keine Routine. Leg zum Beispiel „Beine + Rumpf“ an.</p>'}
+  ${routines().map(r=>`<div class="t-row"><i class="t-bar ${rType(r)}"></i><button class="t-rowm" data-act="t-redit" data-id="${r.id}"><b>${esc(r.name)}</b><small>${esc(rMeta(r))}</small></button>${a?'':`<button class="t-play" data-act="t-rstart" data-id="${r.id}" aria-label="${esc(r.name)} starten">START</button>`}</div>`).join('')||'<p class="hint" style="margin-top:0">Noch keine Routine. Leg zum Beispiel „Beine + Rumpf“ an.</p>'}
   <button class="btn g" data-act="t-rnew">+ NEUE ROUTINE</button>
   <div class="sec"><span>Planen</span></div>
   <button class="t-row t-rowm" data-go="plan"><span><b>Wochenplan</b><small>${WDN.filter((n,i)=>planOf(i).length).length} Trainingstage pro Woche</small></span><span class="chev">${I.chev}</span></button>
@@ -1210,10 +1231,20 @@ function vTraining(){const t=iso(new Date()),wd=wdOf(t),pl=planOf(wd),x=D(t),a=s
   ${ss.slice(0,10).map(s=>`<button class="t-row t-rowm" data-act="t-sess" data-id="${s.id}"><i class="t-bar ${s.type}"></i><span style="flex:1"><b>${esc(s.name)}</b><small>${fromIso(s.date).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'})} · ${Math.round(elapsed(s)/60000)} Min${s.rpe?' · Anstrengung '+s.rpe+'/10':''}</small></span><span class="chev">${I.chev}</span></button>`).join('')||'<p class="hint" style="margin-top:0">Noch keine Trainings gespeichert.</p>'}`}
 
 function vRoutine(){const r=rById(tRid);if(!r)return '<p class="empty">Routine nicht gefunden.</p>';
+  const days=`<div class="sec"><span>An diesen Tagen</span></div><div class="wdays t-days">${WDN.map((n,i)=>`<button class="wd" data-act="t-rday" data-d="${i}" aria-pressed="${planOf(i).some(o=>o.rid===r.id)}">${n}</button>`).join('')}</div>`;
+  if(rType(r)==='a')return `<div class="t-kind a">${I.run}<span>Ausdauer-Routine</span></div>
+  <div class="field t-name"><label for="t-rname">Name</label><input id="t-rname" data-tf="rname" value="${esc(r.name)}" maxlength="30" autocomplete="off"></div>
+  <div class="sec"><span>Sportart</span></div>
+  <div class="t-list">${libOn('aus').map(n=>`<button class="t-li" data-act="t-rsp" data-n="${esc(n)}" aria-pressed="${r.sp===n}"><span class="t-lic">${spIc(n)}</span><span class="t-lin">${esc(n)}</span><span class="t-lik">${r.sp===n?I.check:''}</span></button>`).join('')}</div>
+  <div class="sec"><span>Beschreibung</span></div>
+  <textarea class="t-note" style="margin-top:0" data-tf="rdesc" placeholder="z. B. 6 × 800 m, 2 Min Trabpause" rows="2" maxlength="120">${esc(r.desc||'')}</textarea>
+  ${days}
+  <button class="btn w" data-act="t-rstart" data-id="${r.id}" style="margin-top:26px" ${store.act?'disabled':''}>JETZT STARTEN</button>
+  <button class="btn warn" data-act="t-rdel">ROUTINE LÖSCHEN</button>`;
   const inR=new Set(r.items.map(i=>i.n)),sug=libOn('kraft').filter(n=>!inR.has(n)).slice(0,10);
-  return `<div class="field t-name"><label for="t-rname">Name</label><input id="t-rname" data-tf="rname" value="${esc(r.name)}" maxlength="30" autocomplete="off"></div>
-  <div class="sec"><span>An diesen Tagen</span></div>
-  <div class="wdays t-days">${WDN.map((n,i)=>`<button class="wd" data-act="t-rday" data-d="${i}" aria-pressed="${planOf(i).some(o=>o.t==='k'&&o.rid===r.id)}">${n}</button>`).join('')}</div>
+  return `<div class="t-kind k">${I.lift}<span>Kraft-Routine</span></div>
+  <div class="field t-name"><label for="t-rname">Name</label><input id="t-rname" data-tf="rname" value="${esc(r.name)}" maxlength="30" autocomplete="off"></div>
+  ${days}
   <div class="sec"><span>Übungen</span><span>${r.items.length?'Ziehen zum Sortieren':''}</span></div>
   <div class="dlist" data-list="r">${r.items.map((it,i)=>`<div class="dord t-erow ${it.h?'hid':''}" data-k="${i}"><span class="grip" data-grip aria-label="Ziehen zum Sortieren">${I.menu}</span>
     <button class="t-rowm" data-act="t-iopen" data-i="${i}"><b>${esc(it.n)}</b><small>${iMeta(it)}</small></button>
@@ -1279,20 +1310,31 @@ function vDone(){const a=store.act;if(!a||!a.t1)return vWork();const min=Math.ro
   <button class="btn g" data-act="t-resume">WEITER TRAINIEREN</button>
   <p class="hint" style="text-align:center;font-size:13px">Puls und Belastung kommen dazu, sobald du die Band-Daten importierst.</p>`}
 
-function sheetPlanDay(d){const it=planOf(d),rs=routines(),sp=libOn('aus');
+function sheetPlanDay(d){const it=planOf(d),rs=routines().filter(r=>rType(r)==='k'),ras=routines().filter(r=>rType(r)==='a'),sp=libOn('aus');
   openSheet(WDL[d].toUpperCase(),`${it.length?it.map((o,i)=>`<div class="t-pitem"><i class="t-bar ${o.t}"></i><div style="flex:1;min-width:0"><b>${esc(itName(o))}</b><input data-tf="pnote" data-d="${d}" data-i="${i}" value="${esc(o.note||'')}" placeholder="Notiz" maxlength="60"></div><button class="rm" data-act="t-pdel" data-d="${d}" data-i="${i}" aria-label="Entfernen">${I.x}</button></div>`).join(''):'<p class="hint" style="margin-top:0">Ruhetag. Füge unten ein Training hinzu.</p>'}
   <div class="sec" style="margin-top:22px"><span>Kraft hinzufügen</span></div>
-  ${rs.length?`<div class="chips" style="margin-top:0">${rs.map(r=>`<button class="chipq" data-act="t-padd-k" data-d="${d}" data-id="${r.id}">+ ${esc(r.name)}</button>`).join('')}</div>`:'<p class="hint" style="margin-top:0">Lege zuerst unter Training eine Routine an.</p>'}
+  ${rs.length?`<div class="chips" style="margin-top:0">${rs.map(r=>`<button class="chipq" data-act="t-padd-k" data-d="${d}" data-id="${r.id}">+ ${esc(r.name)}</button>`).join('')}</div>`:'<p class="hint" style="margin-top:0">Lege zuerst unter Training eine Kraft-Routine an.</p>'}
   <div class="sec" style="margin-top:22px"><span>Ausdauer hinzufügen</span></div>
+  ${ras.length?`<div class="chips" style="margin-top:0;margin-bottom:12px">${ras.map(r=>`<button class="chipq" data-act="t-padd-k" data-d="${d}" data-id="${r.id}">+ ${esc(r.name)}</button>`).join('')}</div><p class="hint" style="margin:0 0 8px;font-size:13px">Oder frei:</p>`:''}
   <div class="chips" style="margin-top:0" id="t-spsel">${sp.map((n,i)=>`<button class="chipq ${i===0?'on':''}" data-act="t-spsel" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>
   <div class="addq"><input id="t-pti" placeholder="z. B. 5 km locker" maxlength="40" autocomplete="off"></div>
   <div class="addq" style="margin-top:8px"><input id="t-pnote" placeholder="Notiz (optional)" maxlength="60" autocomplete="off"></div>
   <button class="btn w" data-act="t-padd-a" data-d="${d}">AUSDAUER HINZUFÜGEN</button>
   <button class="btn g" data-act="close">FERTIG</button>`)}
+function exGroups(){const on=libOn('kraft'),used=new Set(),out=[];
+  EXG.forEach(([g,l])=>{const xs=on.filter(n=>l.includes(n));xs.forEach(n=>used.add(n));if(xs.length)out.push([g,xs])});
+  const rest=on.filter(n=>!used.has(n));if(rest.length)out.push(['Eigene',rest]);return out}
 function sheetAddEx(to){const have=new Set(to==='r'?(rById(tRid)||{items:[]}).items.map(i=>i.n):(store.act?store.act.ex.map(e=>e.n):[]));
-  openSheet('ÜBUNG HINZUFÜGEN',`<div class="chips" style="margin-top:0">${libOn('kraft').filter(n=>!have.has(n)).map(n=>`<button class="chipq" data-act="t-exadd" data-to="${to}" data-n="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div>
-  <div class="addq"><input id="t-exnew" placeholder="Eigene Übung" maxlength="30" autocomplete="off"><button class="btn w" style="width:auto;margin:0;padding:0 18px" data-act="t-exnew" data-to="${to}">${I.plus}</button></div>`)}
-function sheetSport(){openSheet('AUSDAUER STARTEN',`<div class="chips" style="margin-top:0">${libOn('aus').map(n=>`<button class="chipq" data-act="t-astart" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>`)}
+  openSheet(to==='act'&&store.act&&!store.act.ex.length?'KRAFT · ÜBUNGEN WÄHLEN':'ÜBUNG HINZUFÜGEN',`${exGroups().map(([g,xs])=>`<div class="t-lg">${g}</div><div class="t-list">${xs.map(n=>`<button class="t-li" data-act="t-exadd" data-to="${to}" data-n="${esc(n)}" aria-pressed="${have.has(n)}"><span class="t-lin">${esc(n)}</span><span class="t-lik">${have.has(n)?I.check:I.plus}</span></button>`).join('')}</div>`).join('')}
+  <div class="addq"><input id="t-exnew" placeholder="Eigene Übung" maxlength="30" autocomplete="off"><button class="btn w" style="width:auto;margin:0;padding:0 18px" data-act="t-exnew" data-to="${to}">${I.plus}</button></div>
+  <button class="btn w" data-act="close" style="margin-top:16px">FERTIG${have.size?' · '+have.size+' ÜBUNG'+(have.size===1?'':'EN'):''}</button>`);
+  const sb=$('#sheetBox');if(sb&&sheetAddEx.y)sb.scrollTop=sheetAddEx.y}
+function sheetKind(){openSheet('NEUE ROUTINE',`<p class="about" style="margin-top:0">Was für eine Routine möchtest du anlegen?</p>
+  <div class="t-list"><button class="t-li big" data-act="t-rnew2" data-t="k"><span class="t-lic k">${I.lift}</span><span class="t-lin"><b>Kraft</b><small>Übungen mit Sätzen, Wiederholungen und Gewicht</small></span><span class="t-lik">${I.chev}</span></button>
+  <button class="t-li big" data-act="t-rnew2" data-t="a"><span class="t-lic a">${I.run}</span><span class="t-lin"><b>Ausdauer</b><small>Laufen, Radfahren & Co. mit Beschreibung</small></span><span class="t-lik">${I.chev}</span></button></div>`)}
+function sheetSport(){const ar=routines().filter(r=>rType(r)==='a');
+  openSheet('AUSDAUER STARTEN',`${ar.length?`<div class="t-lg">Meine Routinen</div><div class="t-list">${ar.map(r=>`<button class="t-li" data-act="t-rstart" data-id="${r.id}"><span class="t-lic">${spIc(r.sp)}</span><span class="t-lin"><b>${esc(r.name)}</b>${r.desc?`<small>${esc(r.desc)}</small>`:''}</span><span class="t-lik">${I.chev}</span></button>`).join('')}</div><div class="t-lg">Frei</div>`:''}
+  <div class="t-list">${libOn('aus').map(n=>`<button class="t-li" data-act="t-astart" data-n="${esc(n)}"><span class="t-lic">${spIc(n)}</span><span class="t-lin">${esc(n)}</span><span class="t-lik">${I.chev}</span></button>`).join('')}</div>`)}
 function sheetSess(id){const s=sessions().find(x=>x.id===id);if(!s)return;const min=Math.round(elapsed(s)/60000);
   openSheet(esc(s.name).toUpperCase(),`<p class="about" style="margin-top:0">${fromIso(s.date).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})} · ${min} Min${s.dist?' · '+fmt(s.dist,2)+' km':''}${s.rpe?' · Anstrengung '+s.rpe+'/10':''}${s.feel?' · '+s.feel:''}</p>
   ${(s.ex||[]).map(e=>`<div class="t-hx"><b>${esc(e.n)}</b><span>${e.sets.map(x=>(x.kg?kgf(x.kg)+'×':'')+x.r).join('  ')}</span></div>`).join('')}
@@ -1301,40 +1343,43 @@ function sheetSess(id){const s=sessions().find(x=>x.id===id);if(!s)return;const 
 
 function startK(r){store.act={id:uid(),date:iso(new Date()),t0:Date.now(),type:'k',name:r?r.name:'Freies Krafttraining',rid:r?r.id:null,
   ex:r?r.items.filter(i=>!i.h).map(i=>({n:i.n,u:i.u,sets:Array.from({length:Math.max(1,i.s|0)},()=>({kg:i.kg??null,r:i.r??null,d:0}))})):[]};save();go('workout')}
-function startA(sp,ti,note){store.act={id:uid(),date:iso(new Date()),t0:Date.now(),type:'a',sp,name:sp+(ti?' · '+ti:''),note0:note||'',laps:[],pause:0,pausedAt:null};save();$('#sheet').hidden=true;go('workout')}
+function startA(sp,ti,note,rid,nm){store.act={id:uid(),date:iso(new Date()),t0:Date.now(),type:'a',sp,rid:rid||null,name:nm||sp+(ti?' · '+ti:''),note0:note||'',laps:[],pause:0,pausedAt:null};save();$('#sheet').hidden=true;go('workout')}
 function addEx(to,n){n=String(n||'').trim();if(!n)return;const u=TIMED.includes(n)?'s':'r';
-  if(to==='r'){const r=rById(tRid);if(!r)return;if(r.items.some(i=>i.n===n)){toast('Schon in der Routine');return}r.items.push({n,s:3,r:u==='s'?60:10,kg:null,u});tOpen=r.items.length-1}
-  else{const a=store.act;if(!a)return;const ls=lastSets(n);a.ex.push({n,u,sets:ls?ls.map(x=>({kg:x.kg,r:x.r,d:0})):Array.from({length:3},()=>({kg:null,r:u==='s'?60:10,d:0}))})}
-  if(!lib('kraft').some(o=>o.n===n))lib('kraft').push({n,c:1});save();$('#sheet').hidden=true;render()}
+  if(to==='r'){const r=rById(tRid);if(!r)return;const ix=r.items.findIndex(i=>i.n===n);if(ix>=0){r.items.splice(ix,1);tOpen=-1;save();render();const sb=$('#sheetBox');sheetAddEx.y=sb?sb.scrollTop:0;sheetAddEx(to);sheetAddEx.y=0;return}r.items.push({n,s:3,r:u==='s'?60:10,kg:null,u});tOpen=r.items.length-1}
+  else{const a=store.act;if(!a)return;const ex=a.ex.findIndex(e=>e.n===n);if(ex>=0){if(a.ex[ex].sets.some(x=>x.d)){toast('Hat schon erledigte Sätze');return}a.ex.splice(ex,1);save();render();const sb=$('#sheetBox');sheetAddEx.y=sb?sb.scrollTop:0;sheetAddEx(to);sheetAddEx.y=0;return}const ls=lastSets(n);a.ex.push({n,u,sets:ls?ls.map(x=>({kg:x.kg,r:x.r,d:0})):Array.from({length:3},()=>({kg:null,r:u==='s'?60:10,d:0}))})}
+  if(!lib('kraft').some(o=>o.n===n))lib('kraft').push({n,c:1});save();render();const sb=$('#sheetBox');sheetAddEx.y=sb?sb.scrollTop:0;sheetAddEx(to);sheetAddEx.y=0}
 function tChange(el){const f=el.dataset.tf,v=el.value;
   if(f==='rname'){const r=rById(tRid);if(r){r.name=v.trim()||'Routine';save()}}
   else if(f==='iv'){const r=rById(tRid),it=r&&r.items[+el.dataset.i];if(!it)return;const x=tnum(v);if(el.dataset.f==='kg')it.kg=x;else if(x!=null&&x>0)it[el.dataset.f]=Math.round(x);save();
     const sm=el.closest('.t-iedit');const row=sm&&sm.previousElementSibling;const meta=row&&row.querySelector('small');if(meta)meta.textContent=iMeta(it)}
+  else if(f==='rdesc'){const r=rById(tRid);if(r){r.desc=v.trim();save()}}
   else if(f==='set'){const a=store.act,x=a&&a.ex[+el.dataset.e]&&a.ex[+el.dataset.e].sets[+el.dataset.s];if(!x)return;x[el.dataset.f]=tnum(v);save()}
   else if(f==='pnote'){const o=planOf(+el.dataset.d)[+el.dataset.i];if(o){o.note=v.trim();save();if(view!=='home')render()}}
   else if(f==='dist'){if(store.act){store.act.dist=tnum(v);save();render()}}
   else if(f==='note'){if(store.act){store.act.note=v;save()}}}
 function tAct(a,el){const ds=el.dataset,A=store.act;
   if(a==='t-planday')sheetPlanDay(+ds.d);
-  else if(a==='t-start'){const o=planOf(+ds.d)[+ds.i];if(!o)return;if(o.t==='k'){const r=rById(o.rid);if(!r){toast('Routine gibt es nicht mehr');return}startK(r)}else startA(o.sp,o.ti,o.note)}
-  else if(a==='t-rstart'){const r=rById(ds.id);if(r&&!store.act)startK(r)}
+  else if(a==='t-start'){const o=planOf(+ds.d)[+ds.i];if(!o)return;if(o.rid){const r=rById(o.rid);if(!r){toast('Routine gibt es nicht mehr');return}if(rType(r)==='a')startA(r.sp,'',[r.desc,o.note].filter(Boolean).join(' · '),r.id,r.name);else startK(r)}else startA(o.sp,o.ti,o.note)}
+  else if(a==='t-rstart'){const r=rById(ds.id);if(r&&!store.act){if(rType(r)==='a')startA(r.sp,'',r.desc,r.id,r.name);else startK(r)}}
   else if(a==='t-free-k'){startK(null);sheetAddEx('act')}
   else if(a==='t-free-a')sheetSport();
   else if(a==='t-astart')startA(ds.n,'','');
-  else if(a==='t-rnew'){const r={id:uid(),name:'Neue Routine',items:[]};routines().push(r);save();tRid=r.id;tOpen=-1;go('routine');setTimeout(()=>{const i=$('#t-rname');if(i){i.focus();i.select()}},50)}
+  else if(a==='t-rnew')sheetKind();
+  else if(a==='t-rsp'){const r=rById(tRid);if(r){r.sp=ds.n;save();render()}}
+  else if(a==='t-rnew2'){$('#sheet').hidden=true;const t=ds.t,r=t==='a'?{id:uid(),type:'a',name:'Neue Ausdauer-Routine',sp:libOn('aus')[0]||'Laufen',desc:'',items:[]}:{id:uid(),type:'k',name:'Neue Routine',items:[]};routines().push(r);save();tRid=r.id;tOpen=-1;go('routine');setTimeout(()=>{const i=$('#t-rname');if(i){i.focus();i.select()}},50)}
   else if(a==='t-redit'){tRid=ds.id;tOpen=-1;go('routine')}
-  else if(a==='t-rday'){const r=rById(tRid),p=planOf(+ds.d),i=p.findIndex(o=>o.t==='k'&&o.rid===r.id);if(i>=0)p.splice(i,1);else p.push({t:'k',rid:r.id,note:''});save();render()}
+  else if(a==='t-rday'){const r=rById(tRid),p=planOf(+ds.d),i=p.findIndex(o=>o.rid===r.id);if(i>=0)p.splice(i,1);else p.push({t:rType(r),rid:r.id,note:''});save();render()}
   else if(a==='t-iopen'){tOpen=tOpen===+ds.i?-1:+ds.i;render()}
   else if(a==='t-ihide'){const it=rById(tRid).items[+ds.i];it.h=it.h?0:1;save();render()}
   else if(a==='t-iunit'){const it=rById(tRid).items[+ds.i];it.u=it.u==='s'?'r':'s';it.r=it.u==='s'?60:10;save();render()}
   else if(a==='t-idel'){rById(tRid).items.splice(+ds.i,1);tOpen=-1;save();render()}
   else if(a==='t-rdel'){openSheet('ROUTINE LÖSCHEN',`<p class="about" style="margin-top:0">„${esc(rById(tRid).name)}“ wird gelöscht und aus dem Wochenplan entfernt. Gespeicherte Trainings bleiben.</p><button class="btn warn" data-act="t-rdel2">LÖSCHEN</button><button class="btn g" data-act="close">ABBRECHEN</button>`)}
-  else if(a==='t-rdel2'){store.routines=routines().filter(r=>r.id!==tRid);for(let d=0;d<7;d++)store.plan[d]=planOf(d).filter(o=>!(o.t==='k'&&o.rid===tRid));save();$('#sheet').hidden=true;go('training');toast('Routine gelöscht')}
+  else if(a==='t-rdel2'){store.routines=routines().filter(r=>r.id!==tRid);for(let d=0;d<7;d++)store.plan[d]=planOf(d).filter(o=>o.rid!==tRid);save();$('#sheet').hidden=true;go('training');toast('Routine gelöscht')}
   else if(a==='t-addex')sheetAddEx(ds.to);
   else if(a==='t-exadd')addEx(ds.to,ds.n);
   else if(a==='t-exnew'){const i=$('#t-exnew');addEx(ds.to,i&&i.value)}
   else if(a==='t-pdel'){planOf(+ds.d).splice(+ds.i,1);save();render();sheetPlanDay(+ds.d)}
-  else if(a==='t-padd-k'){planOf(+ds.d).push({t:'k',rid:ds.id,note:''});save();render();sheetPlanDay(+ds.d)}
+  else if(a==='t-padd-k'){const rr=rById(ds.id);planOf(+ds.d).push({t:rType(rr),rid:ds.id,note:''});save();render();sheetPlanDay(+ds.d)}
   else if(a==='t-spsel'){document.querySelectorAll('#t-spsel .chipq').forEach(b=>b.classList.toggle('on',b===el))}
   else if(a==='t-padd-a'){const s=document.querySelector('#t-spsel .chipq.on');if(!s){toast('Erst eine Sportart wählen');return}planOf(+ds.d).push({t:'a',sp:s.dataset.n,ti:($('#t-pti').value||'').trim(),note:($('#t-pnote').value||'').trim()});save();render();sheetPlanDay(+ds.d)}
   else if(a==='t-libhide'){const o=lib(ds.t)[+ds.i];o.h=o.h?0:1;save();render()}
