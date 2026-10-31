@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793476644";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793476848";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -499,6 +499,11 @@ button.t-row{padding:14px}
 .dq-s{font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--muted);width:52px;flex:none}
 body.kb nav,body.kb .t-rest{display:none}
 html,body{min-height:100%}
+.t-sortb{display:flex;align-items:center;gap:8px;margin:0 0 14px auto;font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--link);padding:6px 0}.t-sortb svg{width:16px;height:16px}
+.t-sr{padding:6px 10px 6px 4px}.t-sr .grip{height:44px;width:40px}
+.t-star{width:40px;height:40px;display:grid;place-items:center;color:var(--dim);flex:none}.t-star svg{width:20px;height:20px}
+.t-star[aria-pressed="true"]{color:var(--yellow)}.t-star[aria-pressed="true"] svg{fill:var(--yellow)}
+.t-sr.dragging{background:var(--card-2)}
 </style>
 </head>
 <body>
@@ -556,6 +561,7 @@ const I={
   pulse:sv('<path d="M3 12h4l2-4 4 8 2-4h6"/>'),
   bed:sv('<path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.6"/>'),
   scale:sv('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.5 9.5a5 5 0 0 1 7 0L13 12"/>'),
+  star:sv('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>'),
   trash:sv('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/>'),
   eye:sv('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
   eyeoff:sv('<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.8 0 3.4-.5 4.7-1.2M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'),
@@ -1472,20 +1478,27 @@ function sheetPlanDay(d){const it=planOf(d),rs=rList().filter(r=>rType(r)==='k')
   <div class="addq" style="margin-top:8px"><input id="t-pnote" placeholder="Notiz (optional)" maxlength="60" autocomplete="off"></div>
   <button class="btn w" data-act="t-padd-a" data-d="${d}">AUSDAUER HINZUFÜGEN</button>
   <button class="btn g" data-act="close">FERTIG</button>`)}
-function exGroups(){const on=libOn('kraft'),used=new Set(),out=[];
-  EXG.forEach(([g,l])=>{const xs=on.filter(n=>l.includes(n));xs.forEach(n=>used.add(n));if(xs.length)out.push([g,xs])});
+function exGroups(){const on=libOn('kraft'),used=new Set(),out=[],fav=lib('kraft').filter(o=>!o.h&&o.fav).map(o=>o.n);if(fav.length){out.push(['Favoriten',fav]);fav.forEach(n=>used.add(n))}
+  EXG.forEach(([g,l])=>{const xs=on.filter(n=>l.includes(n)&&!used.has(n));xs.forEach(n=>used.add(n));if(xs.length)out.push([g,xs])});
   const rest=on.filter(n=>!used.has(n));if(rest.length)out.push(['Eigene',rest]);return out}
-function sheetAddEx(to){const have=new Set(to==='r'?(rById(tRid)||{items:[]}).items.map(i=>i.n):(store.act?store.act.ex.map(e=>e.n):[]));
-  openSheet(to==='act'&&store.act&&!store.act.ex.length?'KRAFT · ÜBUNGEN WÄHLEN':'ÜBUNG HINZUFÜGEN',`${exGroups().map(([g,xs])=>`<div class="t-lg">${g}</div><div class="t-list">${xs.map(n=>`<button class="t-li" data-act="t-exadd" data-to="${to}" data-n="${esc(n)}" aria-pressed="${have.has(n)}"><span class="t-lin">${esc(n)}</span><span class="t-lik">${have.has(n)?I.check:I.plus}</span></button>`).join('')}</div>`).join('')}
-  <div class="addq"><input id="t-exnew" placeholder="Eigene Übung" maxlength="30" autocomplete="off"><button class="btn w" style="width:auto;margin:0;padding:0 18px" data-act="t-exnew" data-to="${to}">${I.plus}</button></div>
-  <button class="btn w" data-act="close" style="margin-top:16px">FERTIG${have.size?' · '+have.size+' ÜBUNG'+(have.size===1?'':'EN'):''}</button>`);
+let tSort=false,tReSheet=null;
+const sortBtn=()=>`<button class="t-sortb" data-act="t-sort">${tSort?I.check+' FERTIG':I.menu+' REIHENFOLGE ÄNDERN'}</button>`;
+function sortRow(list,idx,label,ic,extra){return `<div class="dord t-li t-sr" data-k="${idx}"><span class="grip" data-grip aria-label="Ziehen zum Sortieren">${I.menu}</span>${ic?`<span class="t-lic">${ic}</span>`:''}<span class="t-lin">${label}</span>${extra||''}</div>`}
+function sheetAddEx(to){tReSheet=()=>sheetAddEx(to);const have=new Set(to==='r'?(rById(tRid)||{items:[]}).items.map(i=>i.n):(store.act?store.act.ex.map(e=>e.n):[]));const L=lib('kraft'),ix=n=>L.findIndex(o=>o.n===n);
+  const body=tSort?`<p class="hint" style="margin:0 0 12px">Am Griff ziehen, um die Reihenfolge zu ändern. Mit dem Stern holst du Übungen in „Favoriten“ ganz nach oben.</p>${exGroups().map(([g,xs])=>`<div class="t-lg">${g}</div><div class="t-list dlist" data-list="lib:kraft">${xs.map(n=>sortRow('lib:kraft',ix(n),esc(n),'',`<button class="t-star" data-act="t-fav" data-n="${esc(n)}" aria-pressed="${!!(L[ix(n)]||{}).fav}" aria-label="Favorit">${I.star}</button>`)).join('')}</div>`).join('')}`
+    :`${exGroups().map(([g,xs])=>`<div class="t-lg">${g}</div><div class="t-list">${xs.map(n=>`<button class="t-li" data-act="t-exadd" data-to="${to}" data-n="${esc(n)}" aria-pressed="${have.has(n)}"><span class="t-lin">${esc(n)}</span><span class="t-lik">${have.has(n)?I.check:I.plus}</span></button>`).join('')}</div>`).join('')}
+  <div class="addq"><input id="t-exnew" placeholder="Eigene Übung" maxlength="30" autocomplete="off"><button class="btn w" style="width:auto;margin:0;padding:0 18px" data-act="t-exnew" data-to="${to}">${I.plus}</button></div>`;
+  openSheet(to==='act'&&store.act&&!store.act.ex.length?'KRAFT · ÜBUNGEN WÄHLEN':'ÜBUNG HINZUFÜGEN',`${sortBtn()}${body}
+  ${tSort?'':`<button class="btn w" data-act="close" style="margin-top:16px">FERTIG${have.size?' · '+have.size+' ÜBUNG'+(have.size===1?'':'EN'):''}</button>`}`);
   const sb=$('#sheetBox');if(sb&&sheetAddEx.y)sb.scrollTop=sheetAddEx.y}
 function sheetKind(){openSheet('NEUE ROUTINE',`<p class="about" style="margin-top:0">Was für eine Routine möchtest du anlegen?</p>
   <div class="t-list"><button class="t-li big" data-act="t-rnew2" data-t="k"><span class="t-lic k">${I.lift}</span><span class="t-lin"><b>Kraft</b><small>Übungen mit Sätzen, Wiederholungen und Gewicht</small></span><span class="t-lik">${I.chev}</span></button>
   <button class="t-li big" data-act="t-rnew2" data-t="a"><span class="t-lic a">${I.run}</span><span class="t-lin"><b>Ausdauer</b><small>Laufen, Radfahren & Co. mit Beschreibung</small></span><span class="t-lik">${I.chev}</span></button></div>`)}
-function sheetSport(){const ar=rList().filter(r=>rType(r)==='a');
-  openSheet('AUSDAUER STARTEN',`${ar.length?`<div class="t-lg">Meine Routinen</div><div class="t-list">${ar.map(r=>`<button class="t-li" data-act="t-rstart" data-id="${r.id}"><span class="t-lic">${spIc(r.sp)}</span><span class="t-lin"><b>${esc(r.name)}</b>${r.desc?`<small>${esc(r.desc)}</small>`:''}</span><span class="t-lik">${I.chev}</span></button>`).join('')}</div><div class="t-lg">Frei</div>`:''}
-  <div class="t-list">${libOn('aus').map(n=>`<button class="t-li" data-act="t-astart" data-n="${esc(n)}"><span class="t-lic">${spIc(n)}</span><span class="t-lin">${esc(n)}</span><span class="t-lik">${I.chev}</span></button>`).join('')}</div>`)}
+function sheetSport(){tReSheet=sheetSport;const all=routines(),ar=rList().filter(r=>rType(r)==='a'),L=lib('aus'),vis=L.map((o,i)=>[o,i]).filter(([o])=>!o.h);
+  const body=tSort?`<p class="hint" style="margin:0 0 12px">Am Griff ziehen, um die Reihenfolge zu ändern.</p>${ar.length?`<div class="t-lg">Meine Routinen</div><div class="t-list dlist" data-list="rt">${ar.map(r=>sortRow('rt',all.indexOf(r),`<b>${esc(r.name)}</b>`,spIc(r.sp))).join('')}</div><div class="t-lg">Frei</div>`:''}<div class="t-list dlist" data-list="lib:aus">${vis.map(([o,i])=>sortRow('lib:aus',i,esc(o.n),spIc(o.n))).join('')}</div>`
+    :`${ar.length?`<div class="t-lg">Meine Routinen</div><div class="t-list">${ar.map(r=>`<button class="t-li" data-act="t-rstart" data-id="${r.id}"><span class="t-lic">${spIc(r.sp)}</span><span class="t-lin"><b>${esc(r.name)}</b>${r.desc?`<small>${esc(r.desc)}</small>`:''}</span><span class="t-lik">${I.chev}</span></button>`).join('')}</div><div class="t-lg">Frei</div>`:''}
+  <div class="t-list">${vis.map(([o])=>`<button class="t-li" data-act="t-astart" data-n="${esc(o.n)}"><span class="t-lic">${spIc(o.n)}</span><span class="t-lin">${esc(o.n)}</span><span class="t-lik">${I.chev}</span></button>`).join('')}</div>`;
+  openSheet('AUSDAUER STARTEN',sortBtn()+body)}
 function sheetSess(id){const s=sessions().find(x=>x.id===id);if(!s)return;const min=Math.round(elapsed(s)/60000);
   openSheet(esc(s.name).toUpperCase(),`<p class="about" style="margin-top:0">${fromIso(s.date).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})} · ${min} Min${s.dist?' · '+fmt(s.dist,2)+' km':''}${s.rpe?' · Anstrengung '+s.rpe+'/10':''}${s.feel?' · '+s.feel:''}</p>
   ${(s.ex||[]).map(e=>`<div class="t-hx"><b>${esc(e.n)}</b><span>${e.sets.map(x=>(x.kg?kgf(x.kg)+'×':'')+x.r).join('  ')}</span></div>`).join('')}
@@ -1514,8 +1527,10 @@ function tAct(a,el){const ds=el.dataset,A=store.act;
   if(a==='t-planday')sheetPlanDay(+ds.d);
   else if(a==='t-start'){const o=planOf(+ds.d)[+ds.i];if(!o)return;if(o.rid){const r=rById(o.rid);if(!r){toast('Routine gibt es nicht mehr');return}if(rType(r)==='a')startA(r.sp,'',[r.desc,o.note].filter(Boolean).join(' · '),r.id,r.name);else startK(r)}else startA(o.sp,o.ti,o.note)}
   else if(a==='t-rstart'){const r=rById(ds.id);if(r&&!store.act){if(rType(r)==='a')startA(r.sp,'',r.desc,r.id,r.name);else startK(r)}}
-  else if(a==='t-free-k'){startK(null);sheetAddEx('act')}
-  else if(a==='t-free-a')sheetSport();
+  else if(a==='t-free-k'){tSort=false;startK(null);sheetAddEx('act')}
+  else if(a==='t-free-a'){tSort=false;sheetSport()}
+  else if(a==='t-sort'){tSort=!tSort;const sb=$('#sheetBox');if(sb)sb.scrollTop=0;tReSheet&&tReSheet()}
+  else if(a==='t-fav'){const o=lib('kraft').find(x=>x.n===ds.n);if(o){o.fav=o.fav?0:1;save();const sb=$('#sheetBox'),y=sb?sb.scrollTop:0;tReSheet&&tReSheet();const nb=$('#sheetBox');if(nb)nb.scrollTop=y}}
   else if(a==='t-astart')startA(ds.n,'','');
   else if(a==='t-rnew')sheetKind();
   else if(a==='t-rsave'){const r=rById(tRid);if(!r)return;if(rType(r)==='k'&&!r.items.length){toast('Füge mindestens eine Übung hinzu');return}const nw=r.draft;delete r.draft;save();go('training');toast(nw?'Routine gespeichert':'Gespeichert')}
@@ -1530,7 +1545,7 @@ function tAct(a,el){const ds=el.dataset,A=store.act;
   else if(a==='t-idel'){rById(tRid).items.splice(+ds.i,1);tOpen=-1;save();render()}
   else if(a==='t-rdel'){if(ds.id)setRid(ds.id);if(!rById(tRid))return;openSheet('ROUTINE LÖSCHEN',`<p class="about" style="margin-top:0">„${esc(rById(tRid).name)}“ wird gelöscht und aus dem Wochenplan entfernt. Gespeicherte Trainings bleiben.</p><button class="btn warn" data-act="t-rdel2">LÖSCHEN</button><button class="btn g" data-act="close">ABBRECHEN</button>`)}
   else if(a==='t-rdel2'){store.routines=routines().filter(r=>r.id!==tRid);for(let d=0;d<7;d++)store.plan[d]=planOf(d).filter(o=>o.rid!==tRid);save();$('#sheet').hidden=true;tRid=null;if(view==='training')render();else go('training');toast('Routine gelöscht')}
-  else if(a==='t-addex')sheetAddEx(ds.to);
+  else if(a==='t-addex'){tSort=false;sheetAddEx(ds.to)}
   else if(a==='t-exadd')addEx(ds.to,ds.n);
   else if(a==='t-exnew'){const i=$('#t-exnew');addEx(ds.to,i&&i.value)}
   else if(a==='t-pdel'){planOf(+ds.d).splice(+ds.i,1);save();render();sheetPlanDay(+ds.d)}
@@ -1562,7 +1577,9 @@ function tAct(a,el){const ds=el.dataset,A=store.act;
   else if(a==='t-sess')sheetSess(ds.id);
   else if(a==='t-sdel'){const sx=sessions().find(x=>x.id===ds.id);if(sx&&sx.src==='nutrac'){ntDelDoc(sx.nid);ntDec()[sx.nid]='deleted'}else ntDel(ds.id);store.sess=sessions().filter(s=>s.id!==ds.id);save();$('#sheet').hidden=true;render();toast('Gelöscht')}}
 function tLeaveRoutine(){const r=rById(tRid);if(r&&r.draft){store.routines=routines().filter(x=>x.id!==r.id);for(let d=0;d<7;d++)store.plan[d]=planOf(d).filter(o=>o.rid!==r.id);save()}}
-function tDrag(list,order){if(list==='r'){const r=rById(tRid);if(r){r.items=order.map(i=>r.items[i]);tOpen=-1}}else if(list.startsWith('lib:')){const t=list.slice(4),l=lib(t);store.lib[t]=order.map(i=>l[i])}save();render()}
+function slotSort(arr,order){const out=arr.slice(),slots=order.slice().sort((a,b)=>a-b);slots.forEach((sl,j)=>out[sl]=arr[order[j]]);return out}
+function tDrag(list,order){if(list==='r'){const r=rById(tRid);if(r){r.items=slotSort(r.items,order);tOpen=-1}}else if(list==='rt'){store.routines=slotSort(routines(),order)}else if(list.startsWith('lib:')){const t=list.slice(4);store.lib[t]=slotSort(lib(t),order)}
+  save();render();if(!$('#sheet').hidden&&tReSheet){const sb=$('#sheetBox'),y=sb?sb.scrollTop:0;tReSheet();const nb=$('#sheetBox');if(nb)nb.scrollTop=y}}
 function tTick(){const a=store.act;if(!a)return;const t=mmss(elapsed(a));['#t-clk','#t-clk2','#t-clkb'].forEach(s=>{const e=$(s);if(e)e.textContent=t});
   if(a.rest){const left=a.rest.until-Date.now();if(left<=0){delete a.rest;save();try{navigator.vibrate&&navigator.vibrate(300)}catch(e){}const r=$('#t-rest');if(r)r.remove();if(view==='workout')toast('Pause vorbei')}
     else{const v=$('#t-restv'),p=$('#t-restp');if(v)v.textContent=mmss(left);if(p)p.style.width=(left/(a.rest.dur*1000)*100)+'%'}}}
@@ -1690,7 +1707,7 @@ document.addEventListener('pointerdown',e=>{const g=e.target.closest('[data-grip
   const move=ev=>{ev.preventDefault();lastY=ev.clientY;const sibs=[...list.querySelectorAll('.dord:not(.dragging)')];let before=null;
     for(const sb of sibs){const r=sb.getBoundingClientRect();if(lastY<r.top+r.height/2){before=sb;break}}
     if(before!==row.nextSibling)list.insertBefore(row,before);
-    const vh=window.innerHeight;if(lastY>vh-120)window.scrollBy(0,12);else if(lastY<140)window.scrollBy(0,-12)};
+    const sc=row.closest('#sheetBox');if(sc){const r=sc.getBoundingClientRect();if(lastY>r.bottom-80)sc.scrollBy(0,10);else if(lastY<r.top+80)sc.scrollBy(0,-10)}else{const vh=window.innerHeight;if(lastY>vh-120)window.scrollBy(0,12);else if(lastY<140)window.scrollBy(0,-12)}};
   const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);row.classList.remove('dragging');
     const order=[...list.querySelectorAll('.dord')].map(x=>x.dataset.k);if(list.dataset.list){tDrag(list.dataset.list,order.map(Number));return}store.dash=order.concat(store.dash.filter(k=>!order.includes(k)));save();if(data!==store)data.dash=store.dash;render()};
   window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up)});
