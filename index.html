@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793484014";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793484141";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -504,6 +504,8 @@ html,body{min-height:100%}
 .t-star{width:40px;height:40px;display:grid;place-items:center;color:var(--dim);flex:none}.t-star svg{width:20px;height:20px}
 .t-star[aria-pressed="true"]{color:var(--yellow)}.t-star[aria-pressed="true"] svg{fill:var(--yellow)}
 .t-sr.dragging{background:var(--card-2)}
+.act-s{width:100%;text-align:left}.act-n small{display:block;font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted);margin-top:3px;text-transform:none}
+.act-s .act-n{min-width:0;letter-spacing:.05em;overflow-wrap:normal;word-break:normal;hyphens:auto;-webkit-hyphens:auto}
 </style>
 </head>
 <body>
@@ -755,7 +757,10 @@ function workRows(k){return data.workouts.filter(w=>w.date===k&&!NOSPORT.include
   const sp=SPORT[String(w.type).toLowerCase()]||[String(w.type||'Aktivität').toUpperCase(),'bolt'];
   return `<div class="act"><div class="badge" style="background:var(--strain)">${I[sp[1]]}<span>${fmt(w.strain,1)}</span></div><div class="act-n">${sp[0]}</div>
   <div class="act-t"><span>${tm(w.start)}</span><span>${w.end?tm(w.end):fmt(w.dur)+' min'}</span></div><i class="act-b" style="background:var(--strain)"></i></div>`}).join('')}
-function acts(k,title='HEUTIGE AKTIVITÄTEN',withSleep=true){const rows=(withSleep?sleepRow(k):'')+workRows(k);
+function sessRows(k){return sessions().filter(x=>x.date===k&&x.t1).sort((a,b)=>a.t0-b.t0).map(x=>{const c=x.type==='k'?'var(--s-high)':'var(--strain)',ic=x.type==='k'?I.lift:spIc(x.sp);
+  return `<button class="act act-s" data-act="t-sess" data-id="${x.id}"><div class="badge" style="background:${c}">${ic}<span>${hm(elapsed(x)/60000)}</span></div><div class="act-n">${esc(x.name).toUpperCase()}${x.kcal?`<small>${fmt(x.kcal)} kcal</small>`:''}</div>
+  <div class="act-t"><span>${tm(x.t0)}</span><span>${tm(x.t1)}</span></div><i class="act-b" style="background:${c}"></i></button>`}).join('')}
+function acts(k,title='HEUTIGE AKTIVITÄTEN',withSleep=true){const rows=(withSleep?sleepRow(k):'')+workRows(k)+sessRows(k);
   return `<div class="card"><div class="card-h"><span>${title}</span>${I.expand}</div>${rows||'<p class="empty">Keine Aktivitäten an diesem Tag.</p>'}</div>`}
 function insight(t,p){return `<div class="ins"><span class="logo">${I.pulse}</span><h4>${t}</h4><p>${p}</p></div>`}
 function healthOf(k){return['rhr','hrv','resp'].map(key=>{const f=MET[key].f,v=f(k),h=hist(f,k),m=mean(h),s=sdev(h);
