@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793475555";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793475871";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -478,6 +478,11 @@ button.t-row{padding:14px}
 .addq .btn svg{width:18px;height:18px;display:block;margin:auto}
 .msub{display:block;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin-top:3px}
 .t-del{color:var(--dim);margin-left:-4px}.t-del svg{width:19px;height:19px}
+.kc-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.kc-top div{background:var(--card);border-radius:16px;padding:16px;text-align:center}
+.kc-top .l{display:block;font-size:12px;font-weight:800;letter-spacing:.1em}
+.kc-top b{display:block;font-size:40px;font-weight:600;margin-top:6px}
+.kc-hint{display:block;width:100%;text-align:left;border:1px solid var(--mint)}.kc-hint b{display:block;font-size:16px;color:var(--mint)}.kc-hint span{display:block;font-size:13px;color:var(--muted);margin-top:4px}
 </style>
 </head>
 <body>
@@ -922,7 +927,36 @@ function barChart(keys,vals,m,key,avg){
   return s+'</svg>'}
 const BODY=['weight','fat'];
 function lastBody(k,f){const ds=days().filter(x=>x<=k&&f(x)!=null);return ds.length?ds[ds.length-1]:null}
-function vMetric(key,k){const body=BODY.includes(key),m=MET[key]||MET.hrv;let range=body?mRange:(mRange||30);
+let kRange=14;
+function kcalChart(keys,burn,eat){const W=340,H=210,L=44,B=26,T=12,Rp=8,iw=W-L-Rp,ih=H-T-B,all=burn.concat(eat).filter(v=>v!=null);
+  if(!all.length)return '<p class="empty">Für diesen Zeitraum gibt es keine Werte.</p>';
+  const hi=Math.ceil(Math.max(...all)*1.1/500)*500||500,y=v=>T+ih-clamp(v,0,hi)/hi*ih,bw=iw/keys.length,g=bw*.14,w=(bw-3*g)/2;
+  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verbrannte und gegessene Kalorien">`;
+  [0,hi/2,hi].forEach(t=>{s+=`<line x1="${L}" x2="${W-Rp}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end">${fmt(t)}</text>`});
+  keys.forEach((k,i)=>{const x0=L+i*bw+g,op=i===keys.length-1?1:.7;
+    if(burn[i]!=null)s+=`<rect x="${x0}" y="${y(burn[i])}" width="${w}" height="${Math.max(2,T+ih-y(burn[i]))}" rx="${Math.min(3,w*.3)}" fill="var(--strain)" opacity="${op}"/>`;
+    if(eat[i]!=null)s+=`<rect x="${x0+w+g}" y="${y(eat[i])}" width="${w}" height="${Math.max(2,T+ih-y(eat[i]))}" rx="${Math.min(3,w*.3)}" fill="var(--mint)" opacity="${op}"/>`});
+  const ab=mean(burn.filter(v=>v!=null)),ae=mean(eat.filter(v=>v!=null));
+  if(ab!=null)s+=`<line x1="${L}" x2="${W-Rp}" y1="${y(ab)}" y2="${y(ab)}" stroke="var(--strain)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+  if(ae!=null)s+=`<line x1="${L}" x2="${W-Rp}" y1="${y(ae)}" y2="${y(ae)}" stroke="var(--mint)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+  const lab=keys.length<=7?keys.map((k,i)=>i):[0,.25,.5,.75,1].map(q=>Math.round(q*(keys.length-1)));
+  lab.forEach(i=>{const d=fromIso(keys[i]);s+=`<text x="${L+i*bw+bw/2}" y="${H-8}" text-anchor="middle" ${i===keys.length-1?'style="fill:#fff"':''}>${keys.length<=7?d.toLocaleDateString('de-DE',{weekday:'short'}):d.getDate()+'.'+(d.getMonth()+1)+'.'}</text>`});
+  return s+'</svg>'}
+function vKcal(k){const m=MET.kcal,eatD=store.nt&&store.eat?store.eat:null,keys=Array.from({length:kRange},(_,i)=>shift(k,i-kRange+1));
+  const burn=keys.map(x=>data.daily[x]?m.f(x):null),eat=keys.map(x=>eatD&&eatD[x]!=null?eatD[x]:null);
+  const b=m.f(k),e=eatD?eatD[k]:null,bal=b!=null&&e!=null?e-b:null,sg=v=>v>0?'+':v<0?'−':'±';
+  const ab=mean(burn.filter(v=>v!=null)),ae=mean(eat.filter(v=>v!=null)),both=keys.map((x,i)=>burn[i]!=null&&eat[i]!=null?eat[i]-burn[i]:null).filter(v=>v!=null),abal=mean(both);
+  return `<div class="mhead"><span class="mic">${I.flame}</span><h2>Kalorien</h2></div>
+  <div class="kc-top"><div><span class="l" style="color:var(--strain)">VERBRANNT</span><b class="num">${b==null?'–':fmt(b)}</b></div><div><span class="l" style="color:var(--mint)">GEGESSEN</span><b class="num">${e==null?'–':fmt(e)}</b></div></div>
+  <p class="jsub" style="text-align:center">${bal==null?(eatD?'Für diesen Tag fehlt noch ein Wert.':''):`Bilanz ${dayLabel(k)==='HEUTE'?'heute':'an diesem Tag'}: <b class="num" style="color:var(--fg)">${sg(bal)}${fmt(Math.abs(bal))} kcal</b> (${bal<0?'Defizit':bal>0?'Überschuss':'ausgeglichen'})`}</p>
+  ${eatD?'':`<button class="card kc-hint" data-act="nt-open"><b>Mit Nutrac verbinden</b><span>Dann siehst du hier auch, was du gegessen hast.</span></button>`}
+  <div class="seg">${[7,14,30].map(r=>`<button data-act="krange" data-r="${r}" aria-pressed="${kRange===r}">${r} TAGE</button>`).join('')}</div>
+  <div class="legend" style="justify-content:center"><span><i style="border-color:var(--strain);background:var(--strain)"></i>Verbrannt</span>${eatD?'<span><i style="border-color:var(--mint);background:var(--mint)"></i>Gegessen</span>':''}</div>
+  ${kcalChart(keys,burn,eat)}
+  <div class="tstats"><div><span class="l">Ø VERBRANNT</span><b class="num" style="color:var(--strain)">${ab==null?'–':fmt(ab)}</b></div><div><span class="l">Ø GEGESSEN</span><b class="num" style="color:var(--mint)">${ae==null?'–':fmt(ae)}</b></div><div><span class="l">Ø BILANZ</span><b class="num">${abal==null?'–':sg(abal)+fmt(Math.abs(abal))}</b></div></div>
+  <p class="tnote">Durchschnitt der letzten ${kRange} Tage · gestrichelt: Durchschnitt</p>
+  ${insight('WAS BEDEUTET DAS?','Verbrannt sind alle Kalorien des Tages, also Grundumsatz plus Bewegung und Training. Gegessen kommt aus Nutrac. Ist die Bilanz negativ, hast du weniger gegessen als verbraucht (Defizit), ist sie positiv, mehr (Überschuss).')}`}
+function vMetric(key,k){if(key==='kcal')return vKcal(k);const body=BODY.includes(key),m=MET[key]||MET.hrv;let range=body?mRange:(mRange||30);
   if(range===0){const ds=days().filter(x=>x<=k&&m.f(x)!=null);const first=ds[0]||k;range=Math.max(7,Math.round((fromIso(k)-fromIso(first))/864e5)+1)}
   const keys=Array.from({length:range},(_,i)=>shift(k,i-range+1)),vals=keys.map(x=>data.daily[x]?m.f(x):null),valid=vals.filter(v=>v!=null),lk=body?lastBody(k,m.f):k,v=lk?m.f(lk):null,a=mean(hist(m.f,k)),ra=mean(valid);
   return `<div class="mhead"><span class="mic">${I[m.ic]}</span><h2>${m.n}</h2></div>
@@ -1513,6 +1547,8 @@ function act(a,el){
   else if(a==='back')go(TBACK[view]||prevView||'home',true);
   else if(a==='metric'){metricKey=el.dataset.k;go('metric')}
   else if(a==='mrange'){mRange=+el.dataset.r;render()}
+  else if(a==='krange'){kRange=+el.dataset.r;render()}
+  else if(a==='nt-open'){moreOpen.add('nutrac');go('mehr');setTimeout(()=>{const g=document.querySelector('.grp[data-g=nutrac]');if(g)g.scrollIntoView({block:'start'})},60)}
   else if(a==='addq'){const i=$('#newq'),c=$('#newcat');addQ(i&&i.value,c&&c.value)}
   else if(a==='sugg')addQ(el.dataset.t);
   else if(a==='rmq'){store.customQ=(store.customQ||[]).filter(c=>c.id!==el.dataset.q);store.hiddenQ=(store.hiddenQ||[]).filter(x=>x!==el.dataset.q);save();if(data!==store)data.customQ=store.customQ;render()}
