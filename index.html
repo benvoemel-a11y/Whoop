@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793476848";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793477541";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -952,8 +952,11 @@ function lastBody(k,f){const ds=days().filter(x=>x<=k&&f(x)!=null);return ds.len
 let kRange=14,kOpen=false;
 function bmrOf(k){const ks=Object.keys(store.daily||{}).filter(d=>d<=k&&store.daily[d].bmr).sort();if(ks.length)return {v:store.daily[ks[ks.length-1]].bmr,src:'Withings'};
   const w=bodyKg(),h=store.height||170,a=store.age||25;return {v:Math.round(10*w+6.25*h-5*a+5),src:'geschätzt'}}
-function kParts(k){const x=D(k);if(x.kcal==null&&x.akcal==null)return null;const b=bmrOf(k).v,act=x.akcal!=null?x.akcal:Math.max(0,(x.kcal||0)-b);
-  const tr=sessions().filter(s=>s.date===k).reduce((a,s)=>a+(s.kcal||0),0),tot=Math.max(x.kcal||0,b+act);return {bmr:b,act:tot-b,tr,tot}}
+function kParts(k){const x=D(k),ss=sessions().filter(s=>s.date===k),tr=ss.reduce((a,s)=>a+(s.kcal||0),0);
+  if(x.kcal==null&&x.akcal==null&&x.steps==null&&!tr)return null;const b=bmrOf(k).v;let alltag;
+  if(x.steps!=null){const ts=ss.reduce((a,s)=>a+(s.type!=='k'&&s.dist?s.dist*1300:0),0);alltag=Math.round(Math.max(0,x.steps-ts)*bodyKg()*0.0005)}
+  else{const act=x.akcal!=null?x.akcal:Math.max(0,(x.kcal||0)-b);alltag=Math.max(0,act-tr)}
+  return {bmr:b,alltag,tr,act:alltag+tr,tot:b+alltag+tr}}
 const kTot=k=>{const p=kParts(k);return p?p.tot:null};
 function kcalChart(keys,burn,eat){const W=340,H=210,L=44,B=26,T=12,Rp=8,iw=W-L-Rp,ih=H-T-B,all=burn.concat(eat).filter(v=>v!=null);
   if(!all.length)return '<p class="empty">Für diesen Zeitraum gibt es keine Werte.</p>';
@@ -975,7 +978,7 @@ function vKcal(k){const m=MET.kcal,eatD=store.nt&&store.eat?store.eat:null,keys=
   const ab=mean(burn.filter(v=>v!=null)),ae=mean(eat.filter(v=>v!=null)),both=keys.map((x,i)=>burn[i]!=null&&eat[i]!=null?eat[i]-burn[i]:null).filter(v=>v!=null),abal=mean(both);
   return `<div class="mhead"><span class="mic">${I.flame}</span><h2>Kalorien</h2></div>
   <div class="kc-top"><button data-act="kopen" aria-expanded="${kOpen}"><span class="l" style="color:var(--strain)">VERBRANNT</span><b class="num">${b==null?'–':fmt(b)}</b><small class="kc-more">${kOpen?'Weniger':'Aufschlüsseln'} ${I.chev}</small></button><div><span class="l" style="color:var(--mint)">GEGESSEN</span><b class="num">${e==null?'–':fmt(e)}</b></div></div>
-  ${kOpen?(()=>{const p=kParts(k),bs=bmrOf(k);return p?`<div class="card kc-parts"><div><span>Grundumsatz <small>${bs.src}</small></span><b class="num">${fmt(p.bmr)}</b></div><div><span>Aktiv verbraucht</span><b class="num">${fmt(p.act)}</b></div>${p.tr?`<div><span>davon Training <small>aus der App</small></span><b class="num">${fmt(p.tr)}</b></div>`:''}<div class="tot"><span>Gesamt</span><b class="num">${fmt(p.tot)}</b></div></div>`:'<p class="hint">Für diesen Tag gibt es keine Werte.</p>'})():''}
+  ${kOpen?(()=>{const p=kParts(k),bs=bmrOf(k);return p?`<div class="card kc-parts"><div><span>Grundumsatz <small>${bs.src}</small></span><b class="num">${fmt(p.bmr)}</b></div><div><span>Alltag <small>Schritte</small></span><b class="num">${fmt(p.alltag)}</b></div><div><span>Training</span><b class="num">${fmt(p.tr)}</b></div><div class="tot"><span>Gesamt</span><b class="num">${fmt(p.tot)}</b></div></div>`:'<p class="hint">Für diesen Tag gibt es keine Werte.</p>'})():''}
   <p class="jsub" style="text-align:center">${bal==null?(eatD?'Für diesen Tag fehlt noch ein Wert.':''):`Bilanz ${dayLabel(k)==='HEUTE'?'heute':'an diesem Tag'}: <b class="num" style="color:var(--fg)">${sg(bal)}${fmt(Math.abs(bal))} kcal</b> (${bal<0?'Defizit':bal>0?'Überschuss':'ausgeglichen'})`}</p>
   ${eatD?'':`<button class="card kc-hint" data-act="nt-open"><b>Mit Nutrac verbinden</b><span>Dann siehst du hier auch, was du gegessen hast.</span></button>`}
   <div class="seg">${[7,14,30].map(r=>`<button data-act="krange" data-r="${r}" aria-pressed="${kRange===r}">${r} TAGE</button>`).join('')}</div>
@@ -983,7 +986,7 @@ function vKcal(k){const m=MET.kcal,eatD=store.nt&&store.eat?store.eat:null,keys=
   ${kcalChart(keys,burn,eat)}
   <div class="tstats"><div><span class="l">Ø VERBRANNT</span><b class="num" style="color:var(--strain)">${ab==null?'–':fmt(ab)}</b></div><div><span class="l">Ø GEGESSEN</span><b class="num" style="color:var(--mint)">${ae==null?'–':fmt(ae)}</b></div><div><span class="l">Ø BILANZ</span><b class="num">${abal==null?'–':sg(abal)+fmt(Math.abs(abal))}</b></div></div>
   <p class="tnote">Durchschnitt der letzten ${kRange} Tage · gestrichelt: Durchschnitt</p>
-  ${insight('WAS BEDEUTET DAS?','Verbrannt sind alle Kalorien des ganzen Tages: dein Grundumsatz für 24 Stunden plus alles, was du aktiv verbraucht hast. Tipp auf „Verbrannt“, um das aufzuschlüsseln. Gegessen kommt aus Nutrac. Ist die Bilanz negativ, hast du weniger gegessen als verbraucht (Defizit), ist sie positiv, mehr (Überschuss).')}`}
+  ${insight('WAS BEDEUTET DAS?','Verbrannt sind alle Kalorien des ganzen Tages: dein Grundumsatz für 24 Stunden plus Alltag (aus deinen Schritten) plus Training. Tipp auf „Verbrannt“, um das aufzuschlüsseln. Gegessen kommt aus Nutrac. Ist die Bilanz negativ, hast du weniger gegessen als verbraucht (Defizit), ist sie positiv, mehr (Überschuss).')}`}
 function vMetric(key,k){if(key==='kcal')return vKcal(k);const body=BODY.includes(key),m=MET[key]||MET.hrv;let range=body?mRange:(mRange||30);
   if(range===0){const ds=days().filter(x=>x<=k&&m.f(x)!=null);const first=ds[0]||k;range=Math.max(7,Math.round((fromIso(k)-fromIso(first))/864e5)+1)}
   const keys=Array.from({length:range},(_,i)=>shift(k,i-range+1)),vals=keys.map(x=>data.daily[x]?m.f(x):null),valid=vals.filter(v=>v!=null),lk=body?lastBody(k,m.f):k,v=lk?m.f(lk):null,a=mean(hist(m.f,k)),ra=mean(valid);
