@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793475316";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793475555";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -477,6 +477,7 @@ button.t-row{padding:14px}
 .t-row>.t-bar{margin:10px 0}
 .addq .btn svg{width:18px;height:18px;display:block;margin:auto}
 .msub{display:block;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin-top:3px}
+.t-del{color:var(--dim);margin-left:-4px}.t-del svg{width:19px;height:19px}
 </style>
 </head>
 <body>
@@ -534,6 +535,7 @@ const I={
   pulse:sv('<path d="M3 12h4l2-4 4 8 2-4h6"/>'),
   bed:sv('<path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.6"/>'),
   scale:sv('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.5 9.5a5 5 0 0 1 7 0L13 12"/>'),
+  trash:sv('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/>'),
   eye:sv('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
   eyeoff:sv('<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.8 0 3.4-.5 4.7-1.2M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'),
   sauna:sv('<path d="M5 20v-6h8v6M9 14V9.5a2 2 0 1 0-0.1 0M15 8c1-1 1-2 0-3M18 8c1-1 1-2 0-3"/>')
@@ -1266,7 +1268,7 @@ function vTraining(){const t=iso(new Date()),wd=wdOf(t),pl=planOf(wd),x=D(t),a=s
   <div class="sec"><span>Freies Training</span></div>
   <div class="t-two"><button class="t-free" data-act="t-free-k" ${a?'disabled':''}>${I.lift}<span>Kraft</span></button><button class="t-free" data-act="t-free-a" ${a?'disabled':''}>${I.run}<span>Ausdauer</span></button></div>
   <div class="sec"><span>Meine Routinen</span></div>
-  ${rList().map(r=>`<div class="t-row"><i class="t-bar ${rType(r)}"></i><button class="t-rowm" data-act="t-redit" data-id="${r.id}"><b>${esc(r.name)}</b><small>${esc(rMeta(r))}</small></button>${a?'':`<button class="t-play" data-act="t-rstart" data-id="${r.id}" aria-label="${esc(r.name)} starten">START</button>`}</div>`).join('')||'<p class="hint" style="margin-top:0">Noch keine Routine. Leg zum Beispiel „Beine + Rumpf“ an.</p>'}
+  ${rList().map(r=>`<div class="t-row"><i class="t-bar ${rType(r)}"></i><button class="t-rowm" data-act="t-redit" data-id="${r.id}"><b>${esc(r.name)}</b><small>${esc(rMeta(r))}</small></button>${a?'':`<button class="t-play" data-act="t-rstart" data-id="${r.id}" aria-label="${esc(r.name)} starten">START</button>`}<button class="t-eye t-del" data-act="t-rdel" data-id="${r.id}" aria-label="${esc(r.name)} löschen">${I.trash}</button></div>`).join('')||'<p class="hint" style="margin-top:0">Noch keine Routine. Leg zum Beispiel „Beine + Rumpf“ an.</p>'}
   <button class="btn g" data-act="t-rnew">+ NEUE ROUTINE</button>
   <div class="sec"><span>Planen</span></div>
   <button class="t-row t-rowm" data-go="plan"><span><b>Wochenplan</b><small>${WDN.filter((n,i)=>planOf(i).length).length} Trainingstage pro Woche</small></span><span class="chev">${I.chev}</span></button>
@@ -1421,8 +1423,8 @@ function tAct(a,el){const ds=el.dataset,A=store.act;
   else if(a==='t-ihide'){const it=rById(tRid).items[+ds.i];it.h=it.h?0:1;save();render()}
   else if(a==='t-iunit'){const it=rById(tRid).items[+ds.i];it.u=it.u==='s'?'r':'s';it.r=it.u==='s'?60:10;save();render()}
   else if(a==='t-idel'){rById(tRid).items.splice(+ds.i,1);tOpen=-1;save();render()}
-  else if(a==='t-rdel'){openSheet('ROUTINE LÖSCHEN',`<p class="about" style="margin-top:0">„${esc(rById(tRid).name)}“ wird gelöscht und aus dem Wochenplan entfernt. Gespeicherte Trainings bleiben.</p><button class="btn warn" data-act="t-rdel2">LÖSCHEN</button><button class="btn g" data-act="close">ABBRECHEN</button>`)}
-  else if(a==='t-rdel2'){store.routines=routines().filter(r=>r.id!==tRid);for(let d=0;d<7;d++)store.plan[d]=planOf(d).filter(o=>o.rid!==tRid);save();$('#sheet').hidden=true;go('training');toast('Routine gelöscht')}
+  else if(a==='t-rdel'){if(ds.id)tRid=ds.id;if(!rById(tRid))return;openSheet('ROUTINE LÖSCHEN',`<p class="about" style="margin-top:0">„${esc(rById(tRid).name)}“ wird gelöscht und aus dem Wochenplan entfernt. Gespeicherte Trainings bleiben.</p><button class="btn warn" data-act="t-rdel2">LÖSCHEN</button><button class="btn g" data-act="close">ABBRECHEN</button>`)}
+  else if(a==='t-rdel2'){store.routines=routines().filter(r=>r.id!==tRid);for(let d=0;d<7;d++)store.plan[d]=planOf(d).filter(o=>o.rid!==tRid);save();$('#sheet').hidden=true;tRid=null;if(view==='training')render();else go('training');toast('Routine gelöscht')}
   else if(a==='t-addex')sheetAddEx(ds.to);
   else if(a==='t-exadd')addEx(ds.to,ds.n);
   else if(a==='t-exnew'){const i=$('#t-exnew');addEx(ds.to,i&&i.value)}
