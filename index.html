@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793484641";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793484960";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -506,7 +506,7 @@ html,body{min-height:100%}
 .t-sr.dragging{background:var(--card-2)}
 .act-s{width:100%;text-align:left}.act-n small{display:block;font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted);margin-top:3px;text-transform:none}
 .act-s .act-n{min-width:0;letter-spacing:.03em;font-size:13px;overflow-wrap:normal;word-break:normal;hyphens:none}.act-s .act-n small{hyphens:none}
-.act-plan .badge{background:transparent;border:1.5px dashed}.act-plan .badge span{font-size:14px;letter-spacing:.1em}.act-plan{opacity:.85}
+.act-plan{grid-template-columns:auto minmax(0,1fr) auto 14px;padding:10px 12px}.ap-ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center}.ap-ic svg{width:22px;height:22px}.ap-l{font-size:10px;font-weight:800;letter-spacing:.1em}.ap-ch{width:12px;height:12px;color:var(--dim);display:grid}.ap-ch svg{width:12px;height:12px}
 </style>
 </head>
 <body>
@@ -762,8 +762,8 @@ function sessRows(k){return sessions().filter(x=>x.date===k&&x.t1).sort((a,b)=>a
   const mn=elapsed(x)/60000;return `<button class="act act-s" data-act="t-sess" data-id="${x.id}"><div class="badge" style="background:${c}">${ic}<span>${mn>=1?hm(mn):'–'}</span></div><div class="act-n">${esc(x.name).toUpperCase()}${x.kcal?`<small>${fmt(x.kcal)} kcal</small>`:''}</div>
   <div class="act-t">${mn>=1?`<span>${tm(x.t0)}</span><span>${tm(x.t1)}</span>`:`<span>${tm(x.t0)}</span>`}</div><i class="act-b" style="background:${c}"></i></button>`}).join('')}
 function planRows(k){const pl=planOf(wdOf(k)),m=planMatch(k);return pl.map((o,i)=>{if(m[i])return '';const r=o.rid?rById(o.rid):null,t=r?rType(r):o.t,c=t==='k'?'var(--s-high)':'var(--strain)',ic=t==='k'?I.lift:spIc(r?r.sp:o.sp);
-  const note=[r&&t==='k'?r.items.filter(z=>!z.h).length+' Übungen':'',r&&t==='a'?r.sp:'',o.note||''].filter(Boolean).join(' · ');
-  return `<button class="act act-s act-plan" data-go="training"><div class="badge" style="color:${c};border-color:${c}">${ic}<span>PLAN</span></div><div class="act-n">${esc(itName(o)).toUpperCase()}<small>${k<iso(new Date())?'Nicht gemacht':'Geplant'}${note?' · '+esc(note):''}</small></div><div class="act-t"></div><i class="act-b" style="background:${c};opacity:.35"></i></button>`}).join('')}
+  const nEx=r?r.items.filter(z=>!z.h).length:0,note=[r&&t==='k'?nEx+(nEx===1?' Übung':' Übungen'):'',r&&t==='a'?r.sp:'',o.note||''].filter(Boolean).join(' · ');
+  return `<button class="act act-s act-plan" data-go="training"><span class="ap-ic" style="color:${c};background:${t==='k'?'rgba(245,163,58,.14)':'rgba(0,147,231,.14)'}">${ic}</span><div class="act-n">${esc(itName(o)).toUpperCase()}${note?`<small>${esc(note)}</small>`:''}</div><span class="ap-l" style="color:${k<iso(new Date())?'var(--muted)':c}">${k<iso(new Date())?'NICHT GEMACHT':'GEPLANT'}</span><span class="ap-ch">${I.chev}</span></button>`}).join('')}
 function acts(k,title='HEUTIGE AKTIVITÄTEN',withSleep=true){const rows=(withSleep?sleepRow(k):'')+workRows(k)+sessRows(k)+planRows(k);
   return `<div class="card"><div class="card-h"><span>${title}</span>${I.expand}</div>${rows||'<p class="empty">Keine Aktivitäten an diesem Tag.</p>'}</div>`}
 function insight(t,p){return `<div class="ins"><span class="logo">${I.pulse}</span><h4>${t}</h4><p>${p}</p></div>`}
