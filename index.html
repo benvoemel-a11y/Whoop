@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793474521";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793475316";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -476,6 +476,7 @@ button.t-row{padding:14px}
 .t-kind svg{width:16px;height:16px}.t-kind.k{color:var(--s-high)}.t-kind.a{color:var(--strain)}
 .t-row>.t-bar{margin:10px 0}
 .addq .btn svg{width:18px;height:18px;display:block;margin:auto}
+.msub{display:block;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin-top:3px}
 </style>
 </head>
 <body>
@@ -692,7 +693,8 @@ const MET={
 function mrow(key,k){
   const m=MET[key],v=m.f(k),a=mean(hist(m.f,k));let tri='<span></span>';
   if(v!=null&&a!=null&&Math.abs(v-a)/(Math.abs(a)||1)>=.01){const up=v>a;tri=`<i class="tri ${up?'up':'dn'} ${m.good&&(up===(m.good>0))?'good':''}"></i>`}
-  return `<button class="mrow" data-act="metric" data-k="${key}"><span class="mic">${I[m.ic]}</span><span class="mlbl">${m.n}</span>
+  const eat=key==='kcal'&&store.nt&&store.eat?store.eat[k]:null,sub=eat!=null?`<small class="msub">Gegessen ${fmt(eat)}${v!=null?` · Bilanz ${eat-v>0?'+':eat-v<0?'−':'±'}${fmt(Math.abs(eat-v))}`:''}</small>`:'';
+  return `<button class="mrow" data-act="metric" data-k="${key}"><span class="mic">${I[m.ic]}</span><span class="mlbl">${m.n}${sub}</span>
     <span class="mval"><b class="num">${v==null?'–':m.v(v)}</b>${tri}<small class="num">${a==null?'':m.v(a)}</small></span></button>`}
 
 /* ---------- Grafik ---------- */
@@ -1103,6 +1105,7 @@ function vMore(){const nd=Object.keys(store.daily||{}).length;
     <div class="field"><label for="age">Alter</label><input id="age" inputmode="numeric" value="${esc(store.age||'')}" placeholder="Jahre"></div>
     <div class="field"><label for="need">Schlafbedarf (h)</label><input id="need" type="number" min="5" max="11" step="0.25" value="${store.need}"></div>`)}
   ${grp('push','Benachrichtigungen',pushSub(),pushBody())}
+  ${grp('nutrac','Nutrac',store.nt?'Verbunden':'Kalorien und Trainings abgleichen',ntBody())}
   ${grp('import','Daten importieren','Withings, OpenStrap',`
     <label class="btn w" for="file" style="margin-top:0">DATEI AUSWÄHLEN</label>
     <label class="btn g" for="file">WITHINGS IMPORTIEREN</label>
@@ -1173,6 +1176,46 @@ function sheetOutlook(k){const x=D(k),t=target(x.rec),ni=nightInfo(k),nn=need(sh
     <p>Um deinen Schlafbedarf von <b>${hm(nn)} h</b> zu decken, geh heute gegen <b>${tm(bed)}</b> ins Bett, wenn du wie heute um ${tm(wake)} aufstehst.</p></div>`)}
 
 /* ---------- Kopf, Leiste, Steuerung ---------- */
+/* ---------- Nutrac ---------- */
+const NT_URL='https://wjbvodjiqjtlezuzgrzn.supabase.co';
+const ntKey=()=>SB_KEY;
+let ntBusy=false,ntLast=0;
+async function ntAuth(body,grant){const r=await fetch(NT_URL+'/auth/v1/token?grant_type='+grant,{method:'POST',headers:{'Content-Type':'application/json',apikey:ntKey()},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.access_token)throw new Error(j.error_description||j.msg||j.error||'Anmeldung fehlgeschlagen');
+  store.nt=Object.assign(store.nt||{},{uid:j.user.id,email:j.user.email,at:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000-60000});save();return store.nt}
+async function ntToken(){const n=store.nt;if(!n||!n.rt)return null;if(Date.now()<n.exp)return n.at;try{await ntAuth({refresh_token:n.rt},'refresh_token');return store.nt.at}catch(e){return null}}
+async function ntFetch(path,opt={}){const t=await ntToken();if(!t)throw new Error('Nicht angemeldet');
+  const r=await fetch(NT_URL+path,Object.assign({},opt,{headers:Object.assign({'Content-Type':'application/json',apikey:ntKey(),Authorization:'Bearer '+t},opt.headers||{})}));if(!r.ok)throw new Error('Nutrac '+r.status);return r}
+async function ntPull(force){if(!store.nt||ntBusy||(!force&&Date.now()-ntLast<120000))return;ntBusy=true;ntLast=Date.now();
+  try{const from=shift(iso(new Date()),-45),r=await ntFetch(`/rest/v1/docs?select=date,data&user_id=eq.${store.nt.uid}&col=eq.food&date=gte.${from}`),rows=await r.json(),eat={};
+    rows.forEach(x=>{const d=x.data||{};if(d.kind&&d.kind!=='food')return;const k=+d.kcal||0;if(x.date&&k)eat[x.date]=(eat[x.date]||0)+k});
+    store.eat=eat;store.nt.ok=Date.now();store.nt.err=null;save();await ntPushAll();if(['home','ueberblick','belastung','mehr'].includes(view))render()}
+  catch(e){if(store.nt){const m=String(e.message||e);store.nt.err=/fetch|network/i.test(m)?'Keine Verbindung zu Nutrac. Wird beim nächsten Öffnen erneut versucht.':/angemeldet/.test(m)?'Anmeldung abgelaufen. Bitte Verbindung trennen und neu verbinden.':m;save()}}ntBusy=false}
+const MET_SP={Laufen:9.8,Radfahren:7.5,Spinning:8.5,Schwimmen:7,Wandern:5,Rudern:7,Crosstrainer:7,Seilspringen:11,Yoga:2.8};
+function bodyKg(){const ks=Object.keys(store.daily||{}).sort();for(let i=ks.length-1;i>=0;i--){const w=store.daily[ks[i]].weight;if(w)return w}return 55}
+function estKcal(s){const h=elapsed(s)/3.6e6,met=s.type==='k'?5:(MET_SP[s.sp]||6);return Math.max(0,Math.round((met-1)*bodyKg()*h))}
+async function ntPush(s){if(!store.nt||store.ntOff)return false;const kc=s.kcal!=null?s.kcal:estKcal(s);
+  const data={kind:'sport',date:s.date,t:s.t0,name:s.name,kcal:kc,min:Math.round(elapsed(s)/60000),src:'whoop'};
+  await ntFetch('/rest/v1/docs',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:store.nt.uid,col:'food',id:'whoop-'+s.id,date:s.date,data,updated_at:new Date().toISOString()})});
+  s.nt=1;save();return true}
+async function ntPushAll(){if(!store.nt||store.ntOff)return;const cut=shift(iso(new Date()),-14);for(const s of sessions()){if(!s.nt&&s.date>=cut){try{await ntPush(s)}catch(e){break}}}}
+async function ntDel(id){if(!store.nt)return;try{await ntFetch(`/rest/v1/docs?user_id=eq.${store.nt.uid}&col=eq.food&id=eq.whoop-${encodeURIComponent(id)}`,{method:'DELETE'})}catch(e){}}
+function ntBody(){const n=store.nt;
+  if(!n)return `<p class="about" style="margin-top:0">Mit deinem Nutrac-Konto anmelden. Dann siehst du unter <b>Kalorien</b>, was du gegessen hast, und deine Trainings landen automatisch in Nutrac.</p>
+    <div class="addq"><input id="nt-mail" type="email" placeholder="E-Mail von Nutrac" autocomplete="username" aria-label="E-Mail"></div>
+    <div class="addq" style="margin-top:8px"><input id="nt-pw" type="password" placeholder="Passwort" autocomplete="current-password" aria-label="Passwort"></div>
+    <button class="btn w" data-act="nt-login">MIT NUTRAC VERBINDEN</button><div class="msg" id="ntmsg" role="status"></div>`;
+  const t=iso(new Date()),e=(store.eat||{})[t];
+  return `<p class="about" style="margin-top:0">Verbunden als <b>${esc(n.email)}</b>.${n.ok?` Zuletzt abgeglichen ${new Date(n.ok).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}.`:''}${n.err?`<br><span style="color:var(--red)">${esc(n.err)}</span>`:''}</p>
+    <p class="about">Heute gegessen: <b>${e!=null?fmt(e)+' kcal':'noch nichts'}</b></p>
+    <button class="tog" data-act="nt-toggle" aria-pressed="${!store.ntOff}"><span>Trainings an Nutrac senden</span><span class="sw"></span></button>
+    <button class="btn g" data-act="nt-sync">JETZT ABGLEICHEN</button>
+    <button class="btn warn" data-act="nt-logout">VERBINDUNG TRENNEN</button>`}
+async function ntLogin(){const m=$('#ntmsg'),em=($('#nt-mail').value||'').trim(),pw=$('#nt-pw').value||'';if(!em||!pw){if(m){m.className='msg err';m.textContent='Bitte E-Mail und Passwort eingeben.'}return}
+  if(m){m.className='msg';m.textContent='Verbinde …'}
+  try{await ntAuth({email:em,password:pw},'password');await ntPull(true);moreOpen.add('nutrac');render();toast('Mit Nutrac verbunden')}
+  catch(e){const x=$('#ntmsg');if(x){x.className='msg err';x.textContent=/invalid/i.test(e.message)?'E-Mail oder Passwort stimmt nicht.':'Das hat nicht geklappt: '+e.message}}}
+
 /* ---------- Training ---------- */
 const WDN=['Mo','Di','Mi','Do','Fr','Sa','So'],WDL=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
 const wdOf=k=>(fromIso(k).getDay()+6)%7;
@@ -1193,6 +1236,7 @@ const kgf=v=>v==null||v===''?'':String(+(+v).toFixed(2)).replace('.',',');
 function lib(t){store.lib=store.lib||{};if(!store.lib[t])store.lib[t]=(t==='kraft'?EX_DEF:SP_DEF).map(n=>({n}));return store.lib[t]}
 const libOn=t=>lib(t).filter(o=>!o.h).map(o=>o.n);
 const routines=()=>store.routines||(store.routines=[]);
+const rList=()=>routines().filter(r=>!r.draft||r.id===tRid&&view==='routine');
 const rById=id=>routines().find(r=>r.id===id);
 function planOf(d){store.plan=store.plan||{};return store.plan[d]||(store.plan[d]=[])}
 const sessions=()=>store.sess||(store.sess=[]);
@@ -1222,7 +1266,7 @@ function vTraining(){const t=iso(new Date()),wd=wdOf(t),pl=planOf(wd),x=D(t),a=s
   <div class="sec"><span>Freies Training</span></div>
   <div class="t-two"><button class="t-free" data-act="t-free-k" ${a?'disabled':''}>${I.lift}<span>Kraft</span></button><button class="t-free" data-act="t-free-a" ${a?'disabled':''}>${I.run}<span>Ausdauer</span></button></div>
   <div class="sec"><span>Meine Routinen</span></div>
-  ${routines().map(r=>`<div class="t-row"><i class="t-bar ${rType(r)}"></i><button class="t-rowm" data-act="t-redit" data-id="${r.id}"><b>${esc(r.name)}</b><small>${esc(rMeta(r))}</small></button>${a?'':`<button class="t-play" data-act="t-rstart" data-id="${r.id}" aria-label="${esc(r.name)} starten">START</button>`}</div>`).join('')||'<p class="hint" style="margin-top:0">Noch keine Routine. Leg zum Beispiel „Beine + Rumpf“ an.</p>'}
+  ${rList().map(r=>`<div class="t-row"><i class="t-bar ${rType(r)}"></i><button class="t-rowm" data-act="t-redit" data-id="${r.id}"><b>${esc(r.name)}</b><small>${esc(rMeta(r))}</small></button>${a?'':`<button class="t-play" data-act="t-rstart" data-id="${r.id}" aria-label="${esc(r.name)} starten">START</button>`}</div>`).join('')||'<p class="hint" style="margin-top:0">Noch keine Routine. Leg zum Beispiel „Beine + Rumpf“ an.</p>'}
   <button class="btn g" data-act="t-rnew">+ NEUE ROUTINE</button>
   <div class="sec"><span>Planen</span></div>
   <button class="t-row t-rowm" data-go="plan"><span><b>Wochenplan</b><small>${WDN.filter((n,i)=>planOf(i).length).length} Trainingstage pro Woche</small></span><span class="chev">${I.chev}</span></button>
@@ -1231,7 +1275,7 @@ function vTraining(){const t=iso(new Date()),wd=wdOf(t),pl=planOf(wd),x=D(t),a=s
   ${ss.slice(0,10).map(s=>`<button class="t-row t-rowm" data-act="t-sess" data-id="${s.id}"><i class="t-bar ${s.type}"></i><span style="flex:1"><b>${esc(s.name)}</b><small>${fromIso(s.date).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'})} · ${Math.round(elapsed(s)/60000)} Min${s.rpe?' · Anstrengung '+s.rpe+'/10':''}</small></span><span class="chev">${I.chev}</span></button>`).join('')||'<p class="hint" style="margin-top:0">Noch keine Trainings gespeichert.</p>'}`}
 
 function vRoutine(){const r=rById(tRid);if(!r)return '<p class="empty">Routine nicht gefunden.</p>';
-  const days=`<div class="sec"><span>An diesen Tagen</span></div><div class="wdays t-days">${WDN.map((n,i)=>`<button class="wd" data-act="t-rday" data-d="${i}" aria-pressed="${planOf(i).some(o=>o.rid===r.id)}">${n}</button>`).join('')}</div>`;
+  const days=`<div class="sec"><span>Im Wochenplan</span><span>optional</span></div><div class="wdays t-days">${WDN.map((n,i)=>`<button class="wd" data-act="t-rday" data-d="${i}" aria-pressed="${planOf(i).some(o=>o.rid===r.id)}">${n}</button>`).join('')}</div>`;
   if(rType(r)==='a')return `<div class="t-kind a">${I.run}<span>Ausdauer-Routine</span></div>
   <div class="field t-name"><label for="t-rname">Name</label><input id="t-rname" data-tf="rname" value="${esc(r.name)}" maxlength="30" autocomplete="off"></div>
   <div class="sec"><span>Sportart</span></div>
@@ -1239,8 +1283,8 @@ function vRoutine(){const r=rById(tRid);if(!r)return '<p class="empty">Routine n
   <div class="sec"><span>Beschreibung</span></div>
   <textarea class="t-note" style="margin-top:0" data-tf="rdesc" placeholder="z. B. 6 × 800 m, 2 Min Trabpause" rows="2" maxlength="120">${esc(r.desc||'')}</textarea>
   ${days}
-  <button class="btn w" data-act="t-rstart" data-id="${r.id}" style="margin-top:26px" ${store.act?'disabled':''}>JETZT STARTEN</button>
-  <button class="btn warn" data-act="t-rdel">ROUTINE LÖSCHEN</button>`;
+  <button class="btn w" data-act="t-rsave" style="margin-top:26px">${r.draft?'ROUTINE SPEICHERN':'FERTIG'}</button>
+  ${r.draft?'':'<button class="btn warn" data-act="t-rdel">ROUTINE LÖSCHEN</button>'}`;
   const inR=new Set(r.items.map(i=>i.n)),sug=libOn('kraft').filter(n=>!inR.has(n)).slice(0,10);
   return `<div class="t-kind k">${I.lift}<span>Kraft-Routine</span></div>
   <div class="field t-name"><label for="t-rname">Name</label><input id="t-rname" data-tf="rname" value="${esc(r.name)}" maxlength="30" autocomplete="off"></div>
@@ -1253,8 +1297,8 @@ function vRoutine(){const r=rById(tRid);if(!r)return '<p class="empty">Routine n
       <div class="t-ieb"><button class="mini" data-act="t-iunit" data-i="${i}">${it.u==='s'?'AUF WIEDERHOLUNGEN':'AUF SEKUNDEN'}</button><button class="rm" data-act="t-idel" data-i="${i}" aria-label="Übung entfernen">${I.x}</button></div></div>`:''}`).join('')}</div>
   <button class="btn g" data-act="t-addex" data-to="r">+ ÜBUNG HINZUFÜGEN</button>
   ${sug.length?`<div class="sec" style="margin-top:22px"><span>Vorschläge</span></div><div class="chips" style="margin-top:0">${sug.map(n=>`<button class="chipq" data-act="t-exadd" data-to="r" data-n="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div>`:''}
-  <button class="btn w" data-act="t-rstart" data-id="${r.id}" style="margin-top:26px" ${store.act?'disabled':''}>JETZT STARTEN</button>
-  <button class="btn warn" data-act="t-rdel">ROUTINE LÖSCHEN</button>`}
+  <button class="btn w" data-act="t-rsave" style="margin-top:26px">${r.draft?'ROUTINE SPEICHERN':'FERTIG'}</button>
+  ${r.draft?'':'<button class="btn warn" data-act="t-rdel">ROUTINE LÖSCHEN</button>'}`}
 
 function vPlan(){const t=wdOf(iso(new Date()));
   return `<div class="t-plan">${WDN.map((n,d)=>{const it=planOf(d);return `<button class="t-pr ${d===t?'cur':''}" data-act="t-planday" data-d="${d}"><span class="t-pd">${n}</span><span class="t-pi">${it.length?it.map(o=>`<span class="t-pe"><i class="t-bar ${o.t}"></i><span><b>${esc(itName(o))}</b>${o.note?`<small>${esc(o.note)}</small>`:''}</span></span>`).join(''):'<span class="t-pz">Ruhetag</span>'}</span></button>`}).join('')}</div>
@@ -1289,6 +1333,7 @@ function vWork(){const a=store.act;if(!a)return `<p class="empty">Kein Training 
 function restHtml(a){const left=Math.max(0,a.rest.until-Date.now()),p=left/(a.rest.dur*1000);
   return `<span>Pause</span><b class="num" id="t-restv">${mmss(left)}</b><button data-act="t-rest" data-v="-15">−15 s</button><button data-act="t-rest" data-v="15">+15 s</button><button data-act="t-rest" data-v="0" aria-label="Pause beenden">${I.x}</button><i class="t-restbar"><i id="t-restp" style="width:${p*100}%"></i></i>`}
 
+function A_kcalHint(a){return a.kcal!=null?'Von dir eingetragen':'Geschätzt aus Dauer und Gewicht'}
 function vDone(){const a=store.act;if(!a||!a.t1)return vWork();const min=Math.round(elapsed(a)/60000);
   let top,extra='';
   if(a.type==='k'){const done=a.ex.flatMap(e=>e.sets.filter(x=>x.d).map(x=>({...x,n:e.n}))),vol=done.reduce((s,x)=>s+(x.kg||0)*(x.r||0),0);
@@ -1300,6 +1345,7 @@ function vDone(){const a=store.act;if(!a||!a.t1)return vWork();const min=Math.ro
     top=`<div class="t-sum"><div><b class="num">${min}</b><small>MIN</small></div><div><b class="num">${a.dist?fmt(a.dist,2):'–'}</b><small>KM</small></div><div><b class="num">${pace?Math.floor(pace)+':'+String(Math.round(pace%1*60)).padStart(2,'0'):'–'}</b><small>MIN/KM</small></div></div>
     <div class="field"><label for="t-dist">Distanz (km)</label><input id="t-dist" data-tf="dist" inputmode="decimal" value="${a.dist?kgf(a.dist):''}" placeholder="z. B. 5,2"></div>`}
   return `${top}
+  <div class="field"><label for="t-kcal">Verbrannt (kcal)<small>${A_kcalHint(a)}</small></label><input id="t-kcal" data-tf="kcal" inputmode="numeric" value="${a.kcal!=null?a.kcal:estKcal(a)}"></div>
   <div class="sec"><span>Wie anstrengend war es?</span></div>
   <div class="t-scale">${Array.from({length:10},(_,i)=>`<button data-act="t-rpe" data-v="${i+1}" aria-pressed="${a.rpe===i+1}">${i+1}</button>`).join('')}</div><div class="t-scl"><span>locker</span><span>Maximum</span></div>
   <div class="sec"><span>Wie hast du dich gefühlt?</span></div>
@@ -1310,7 +1356,7 @@ function vDone(){const a=store.act;if(!a||!a.t1)return vWork();const min=Math.ro
   <button class="btn g" data-act="t-resume">WEITER TRAINIEREN</button>
   <p class="hint" style="text-align:center;font-size:13px">Puls und Belastung kommen dazu, sobald du die Band-Daten importierst.</p>`}
 
-function sheetPlanDay(d){const it=planOf(d),rs=routines().filter(r=>rType(r)==='k'),ras=routines().filter(r=>rType(r)==='a'),sp=libOn('aus');
+function sheetPlanDay(d){const it=planOf(d),rs=rList().filter(r=>rType(r)==='k'),ras=rList().filter(r=>rType(r)==='a'),sp=libOn('aus');
   openSheet(WDL[d].toUpperCase(),`${it.length?it.map((o,i)=>`<div class="t-pitem"><i class="t-bar ${o.t}"></i><div style="flex:1;min-width:0"><b>${esc(itName(o))}</b><input data-tf="pnote" data-d="${d}" data-i="${i}" value="${esc(o.note||'')}" placeholder="Notiz" maxlength="60"></div><button class="rm" data-act="t-pdel" data-d="${d}" data-i="${i}" aria-label="Entfernen">${I.x}</button></div>`).join(''):'<p class="hint" style="margin-top:0">Ruhetag. Füge unten ein Training hinzu.</p>'}
   <div class="sec" style="margin-top:22px"><span>Kraft hinzufügen</span></div>
   ${rs.length?`<div class="chips" style="margin-top:0">${rs.map(r=>`<button class="chipq" data-act="t-padd-k" data-d="${d}" data-id="${r.id}">+ ${esc(r.name)}</button>`).join('')}</div>`:'<p class="hint" style="margin-top:0">Lege zuerst unter Training eine Kraft-Routine an.</p>'}
@@ -1332,7 +1378,7 @@ function sheetAddEx(to){const have=new Set(to==='r'?(rById(tRid)||{items:[]}).it
 function sheetKind(){openSheet('NEUE ROUTINE',`<p class="about" style="margin-top:0">Was für eine Routine möchtest du anlegen?</p>
   <div class="t-list"><button class="t-li big" data-act="t-rnew2" data-t="k"><span class="t-lic k">${I.lift}</span><span class="t-lin"><b>Kraft</b><small>Übungen mit Sätzen, Wiederholungen und Gewicht</small></span><span class="t-lik">${I.chev}</span></button>
   <button class="t-li big" data-act="t-rnew2" data-t="a"><span class="t-lic a">${I.run}</span><span class="t-lin"><b>Ausdauer</b><small>Laufen, Radfahren & Co. mit Beschreibung</small></span><span class="t-lik">${I.chev}</span></button></div>`)}
-function sheetSport(){const ar=routines().filter(r=>rType(r)==='a');
+function sheetSport(){const ar=rList().filter(r=>rType(r)==='a');
   openSheet('AUSDAUER STARTEN',`${ar.length?`<div class="t-lg">Meine Routinen</div><div class="t-list">${ar.map(r=>`<button class="t-li" data-act="t-rstart" data-id="${r.id}"><span class="t-lic">${spIc(r.sp)}</span><span class="t-lin"><b>${esc(r.name)}</b>${r.desc?`<small>${esc(r.desc)}</small>`:''}</span><span class="t-lik">${I.chev}</span></button>`).join('')}</div><div class="t-lg">Frei</div>`:''}
   <div class="t-list">${libOn('aus').map(n=>`<button class="t-li" data-act="t-astart" data-n="${esc(n)}"><span class="t-lic">${spIc(n)}</span><span class="t-lin">${esc(n)}</span><span class="t-lik">${I.chev}</span></button>`).join('')}</div>`)}
 function sheetSess(id){const s=sessions().find(x=>x.id===id);if(!s)return;const min=Math.round(elapsed(s)/60000);
@@ -1356,6 +1402,7 @@ function tChange(el){const f=el.dataset.tf,v=el.value;
   else if(f==='set'){const a=store.act,x=a&&a.ex[+el.dataset.e]&&a.ex[+el.dataset.e].sets[+el.dataset.s];if(!x)return;x[el.dataset.f]=tnum(v);save()}
   else if(f==='pnote'){const o=planOf(+el.dataset.d)[+el.dataset.i];if(o){o.note=v.trim();save();if(view!=='home')render()}}
   else if(f==='dist'){if(store.act){store.act.dist=tnum(v);save();render()}}
+  else if(f==='kcal'){if(store.act){const x=tnum(v);store.act.kcal=x==null?null:Math.round(x);save();render()}}
   else if(f==='note'){if(store.act){store.act.note=v;save()}}}
 function tAct(a,el){const ds=el.dataset,A=store.act;
   if(a==='t-planday')sheetPlanDay(+ds.d);
@@ -1365,8 +1412,9 @@ function tAct(a,el){const ds=el.dataset,A=store.act;
   else if(a==='t-free-a')sheetSport();
   else if(a==='t-astart')startA(ds.n,'','');
   else if(a==='t-rnew')sheetKind();
+  else if(a==='t-rsave'){const r=rById(tRid);if(!r)return;if(rType(r)==='k'&&!r.items.length){toast('Füge mindestens eine Übung hinzu');return}const nw=r.draft;delete r.draft;save();go('training');toast(nw?'Routine gespeichert':'Gespeichert')}
   else if(a==='t-rsp'){const r=rById(tRid);if(r){r.sp=ds.n;save();render()}}
-  else if(a==='t-rnew2'){$('#sheet').hidden=true;const t=ds.t,r=t==='a'?{id:uid(),type:'a',name:'Neue Ausdauer-Routine',sp:libOn('aus')[0]||'Laufen',desc:'',items:[]}:{id:uid(),type:'k',name:'Neue Routine',items:[]};routines().push(r);save();tRid=r.id;tOpen=-1;go('routine');setTimeout(()=>{const i=$('#t-rname');if(i){i.focus();i.select()}},50)}
+  else if(a==='t-rnew2'){$('#sheet').hidden=true;const t=ds.t,r=t==='a'?{id:uid(),type:'a',draft:1,name:'Neue Ausdauer-Routine',sp:libOn('aus')[0]||'Laufen',desc:'',items:[]}:{id:uid(),type:'k',draft:1,name:'Neue Routine',items:[]};routines().push(r);save();tRid=r.id;tOpen=-1;go('routine');setTimeout(()=>{const i=$('#t-rname');if(i){i.focus();i.select()}},50)}
   else if(a==='t-redit'){tRid=ds.id;tOpen=-1;go('routine')}
   else if(a==='t-rday'){const r=rById(tRid),p=planOf(+ds.d),i=p.findIndex(o=>o.rid===r.id);if(i>=0)p.splice(i,1);else p.push({t:rType(r),rid:r.id,note:''});save();render()}
   else if(a==='t-iopen'){tOpen=tOpen===+ds.i?-1:+ds.i;render()}
@@ -1403,9 +1451,10 @@ function tAct(a,el){const ds=el.dataset,A=store.act;
   else if(a==='t-save'){const n=$('.t-note');if(n)A.note=n.value;const s=Object.assign({},A);delete s.rest;delete s.upd;delete s.pausedAt;
     if(s.type==='k'){s.ex=s.ex.map(e=>({n:e.n,u:e.u,sets:e.sets.filter(x=>x.d).map(x=>({kg:x.kg,r:x.r}))})).filter(e=>e.sets.length);
       const r=A.rid&&rById(A.rid);if(r&&A.upd!==false)s.ex.forEach(e=>{const it=r.items.find(i=>i.n===e.n),l=e.sets[e.sets.length-1];if(it&&l){if(l.kg!=null)it.kg=l.kg;if(l.r)it.r=l.r}})}
-    sessions().push(s);store.act=null;save();go('training');toast('Training gespeichert')}
+    if(s.kcal==null)s.kcal=estKcal(s);sessions().push(s);store.act=null;save();go('training');toast('Training gespeichert');ntPush(s).then(ok=>{if(ok)toast('Auch in Nutrac eingetragen')}).catch(()=>{})}
   else if(a==='t-sess')sheetSess(ds.id);
-  else if(a==='t-sdel'){store.sess=sessions().filter(s=>s.id!==ds.id);save();$('#sheet').hidden=true;render();toast('Gelöscht')}}
+  else if(a==='t-sdel'){ntDel(ds.id);store.sess=sessions().filter(s=>s.id!==ds.id);save();$('#sheet').hidden=true;render();toast('Gelöscht')}}
+function tLeaveRoutine(){const r=rById(tRid);if(r&&r.draft){store.routines=routines().filter(x=>x.id!==r.id);for(let d=0;d<7;d++)store.plan[d]=planOf(d).filter(o=>o.rid!==r.id);save()}}
 function tDrag(list,order){if(list==='r'){const r=rById(tRid);if(r){r.items=order.map(i=>r.items[i]);tOpen=-1}}else if(list.startsWith('lib:')){const t=list.slice(4),l=lib(t);store.lib[t]=order.map(i=>l[i])}save();render()}
 function tTick(){const a=store.act;if(!a)return;const t=mmss(elapsed(a));['#t-clk','#t-clk2','#t-clkb'].forEach(s=>{const e=$(s);if(e)e.textContent=t});
   if(a.rest){const left=a.rest.until-Date.now();if(left<=0){delete a.rest;save();try{navigator.vibrate&&navigator.vibrate(300)}catch(e){}const r=$('#t-rest');if(r)r.remove();if(view==='workout')toast('Pause vorbei')}
@@ -1442,7 +1491,7 @@ function render(){
 }
 function pickData(){data=store.real&&Object.keys(store.daily).length?store:demo();const ds=days();if(!ds.includes(cur))cur=ds[ds.length-1];if(trendEnd&&!ds.includes(trendEnd))trendEnd=null}
 const scrollMem={};
-function go(v,restore){scrollMem[view]=window.scrollY;if(!SUB.includes(view))prevView=view;view=v;editDash=false;jEdit=false;const h=v==='metric'?'m-'+metricKey:v;if(location.hash!=='#'+h){try{history.replaceState(null,'','#'+h)}catch(e){location.hash=h}}render();const y=restore?(scrollMem[v]||0):0;window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y))}
+function go(v,restore){if(view==='routine'&&v!=='routine')tLeaveRoutine();scrollMem[view]=window.scrollY;if(!SUB.includes(view))prevView=view;view=v;editDash=false;jEdit=false;const h=v==='metric'?'m-'+metricKey:v;if(location.hash!=='#'+h){try{history.replaceState(null,'','#'+h)}catch(e){location.hash=h}}render();const y=restore?(scrollMem[v]||0):0;window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y))}
 function addQ(t,cat){t=String(t||'').trim();if(!t)return;store.customQ=store.customQ||[];const tq=(t.endsWith('?')?t:t+'?').toLowerCase();if(store.customQ.some(c=>c.t.toLowerCase()===tq)||STDT().has(tq)){toast('Diese Frage gibt es schon');return}
   const q=t.endsWith('?')?t:t+'?',c=cat&&CATS.includes(cat)?cat:autoCat(q);store.customQ.push({id:'c'+Date.now().toString(36),t:q,cat:c});save();if(data!==store)data.customQ=store.customQ;render();toast('Hinzugefügt unter '+c[0]+c.slice(1).toLowerCase())}
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),1800)}
@@ -1450,6 +1499,10 @@ function stepDay(d){const ds=days(),i=ds.indexOf(cur)+d;if(ds[i]){cur=ds[i];rend
 function journalSet(q,v){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};if(j[q]===v)delete j[q];else j[q]=v;if(q==='caffeine'&&j.caffeine===1&&!j.caffeine_n)j.caffeine_n=1;save();if(data!==store)data.journal=store.journal;render()}
 function act(a,el){
   if(a.startsWith('t-')){tAct(a,el);return}
+  if(a==='nt-login'){ntLogin();return}
+  if(a==='nt-sync'){ntPull(true).then(()=>{render();toast(store.nt&&store.nt.err?'Abgleich fehlgeschlagen':'Abgeglichen')});return}
+  if(a==='nt-toggle'){store.ntOff=!store.ntOff;save();render();if(!store.ntOff)ntPushAll();return}
+  if(a==='nt-logout'){store.nt=null;store.eat=null;save();render();toast('Nutrac getrennt');return}
   if(a==='prev')stepDay(-1);else if(a==='next')stepDay(1);
   else if(a==='wprev'||a==='wnext'){trendEnd=shift(trendEnd||cur,a==='wprev'?-7:7);const ds=days();if(trendEnd>ds[ds.length-1])trendEnd=ds[ds.length-1];render()}
   else if(a==='ttab'){trendTab=el.dataset.t;render()}
@@ -1497,7 +1550,7 @@ function act(a,el){
   else if(a==='mine'){store.real=true;save();cur=null;pickData();render()}
   else if(a==='wipe1')sheetWipe(1);
   else if(a==='wipe2')sheetWipe(2);
-  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,routines:store.routines,plan:store.plan,lib:store.lib,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
+  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,routines:store.routines,plan:store.plan,lib:store.lib,nt:store.nt,ntOff:store.ntOff,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-act]');if(!t)return;if(t.dataset.go){$('#sheet').hidden=true;go(t.dataset.go)}else act(t.dataset.act,t)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('#sheet').hidden=true});
@@ -1533,7 +1586,7 @@ addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v
 
 load();const h0=fromHash(location.hash.slice(1));if(h0)view=h0;
 pickData();render();
-setTimeout(pushSync,1500);addEventListener('online',pushSync);
+setTimeout(pushSync,1500);setTimeout(()=>ntPull(true),800);document.addEventListener('visibilitychange',()=>{if(!document.hidden)ntPull()});addEventListener('online',pushSync);
 })();
 </script>
 
