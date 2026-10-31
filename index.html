@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793484141";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793484641";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -505,7 +505,8 @@ html,body{min-height:100%}
 .t-star[aria-pressed="true"]{color:var(--yellow)}.t-star[aria-pressed="true"] svg{fill:var(--yellow)}
 .t-sr.dragging{background:var(--card-2)}
 .act-s{width:100%;text-align:left}.act-n small{display:block;font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted);margin-top:3px;text-transform:none}
-.act-s .act-n{min-width:0;letter-spacing:.05em;overflow-wrap:normal;word-break:normal;hyphens:auto;-webkit-hyphens:auto}
+.act-s .act-n{min-width:0;letter-spacing:.03em;font-size:13px;overflow-wrap:normal;word-break:normal;hyphens:none}.act-s .act-n small{hyphens:none}
+.act-plan .badge{background:transparent;border:1.5px dashed}.act-plan .badge span{font-size:14px;letter-spacing:.1em}.act-plan{opacity:.85}
 </style>
 </head>
 <body>
@@ -758,9 +759,12 @@ function workRows(k){return data.workouts.filter(w=>w.date===k&&!NOSPORT.include
   return `<div class="act"><div class="badge" style="background:var(--strain)">${I[sp[1]]}<span>${fmt(w.strain,1)}</span></div><div class="act-n">${sp[0]}</div>
   <div class="act-t"><span>${tm(w.start)}</span><span>${w.end?tm(w.end):fmt(w.dur)+' min'}</span></div><i class="act-b" style="background:var(--strain)"></i></div>`}).join('')}
 function sessRows(k){return sessions().filter(x=>x.date===k&&x.t1).sort((a,b)=>a.t0-b.t0).map(x=>{const c=x.type==='k'?'var(--s-high)':'var(--strain)',ic=x.type==='k'?I.lift:spIc(x.sp);
-  return `<button class="act act-s" data-act="t-sess" data-id="${x.id}"><div class="badge" style="background:${c}">${ic}<span>${hm(elapsed(x)/60000)}</span></div><div class="act-n">${esc(x.name).toUpperCase()}${x.kcal?`<small>${fmt(x.kcal)} kcal</small>`:''}</div>
-  <div class="act-t"><span>${tm(x.t0)}</span><span>${tm(x.t1)}</span></div><i class="act-b" style="background:${c}"></i></button>`}).join('')}
-function acts(k,title='HEUTIGE AKTIVITÄTEN',withSleep=true){const rows=(withSleep?sleepRow(k):'')+workRows(k)+sessRows(k);
+  const mn=elapsed(x)/60000;return `<button class="act act-s" data-act="t-sess" data-id="${x.id}"><div class="badge" style="background:${c}">${ic}<span>${mn>=1?hm(mn):'–'}</span></div><div class="act-n">${esc(x.name).toUpperCase()}${x.kcal?`<small>${fmt(x.kcal)} kcal</small>`:''}</div>
+  <div class="act-t">${mn>=1?`<span>${tm(x.t0)}</span><span>${tm(x.t1)}</span>`:`<span>${tm(x.t0)}</span>`}</div><i class="act-b" style="background:${c}"></i></button>`}).join('')}
+function planRows(k){const pl=planOf(wdOf(k)),m=planMatch(k);return pl.map((o,i)=>{if(m[i])return '';const r=o.rid?rById(o.rid):null,t=r?rType(r):o.t,c=t==='k'?'var(--s-high)':'var(--strain)',ic=t==='k'?I.lift:spIc(r?r.sp:o.sp);
+  const note=[r&&t==='k'?r.items.filter(z=>!z.h).length+' Übungen':'',r&&t==='a'?r.sp:'',o.note||''].filter(Boolean).join(' · ');
+  return `<button class="act act-s act-plan" data-go="training"><div class="badge" style="color:${c};border-color:${c}">${ic}<span>PLAN</span></div><div class="act-n">${esc(itName(o)).toUpperCase()}<small>${k<iso(new Date())?'Nicht gemacht':'Geplant'}${note?' · '+esc(note):''}</small></div><div class="act-t"></div><i class="act-b" style="background:${c};opacity:.35"></i></button>`}).join('')}
+function acts(k,title='HEUTIGE AKTIVITÄTEN',withSleep=true){const rows=(withSleep?sleepRow(k):'')+workRows(k)+sessRows(k)+planRows(k);
   return `<div class="card"><div class="card-h"><span>${title}</span>${I.expand}</div>${rows||'<p class="empty">Keine Aktivitäten an diesem Tag.</p>'}</div>`}
 function insight(t,p){return `<div class="ins"><span class="logo">${I.pulse}</span><h4>${t}</h4><p>${p}</p></div>`}
 function healthOf(k){return['rhr','hrv','resp'].map(key=>{const f=MET[key].f,v=f(k),h=hist(f,k),m=mean(h),s=sdev(h);
@@ -791,7 +795,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.k
   ${ageCard(k)}
   <div class="h-row"><h2 class="h1">Mein Tag</h2><button class="plus" data-go="logbuch" aria-label="Logbuch ausfüllen">${I.plus}</button></div>
   <button class="outlook" data-go="ausblick">${I.sun}<span>Täglicher Ausblick</span><span class="chev">${I.chev}</span></button>
-  ${tHome(k)}${k===iso(new Date())?askCard():''}
+  ${k===iso(new Date())?askCard():''}
   ${acts(k)}
   <div class="card jcard jc"><div class="card-h"><span>MEIN LOGBUCH · ${jLabel(k)==='gestern'?'GESTERN':fromIso(jKey(k)).toLocaleDateString('de-DE',{day:'numeric',month:'numeric'})}</span><span class="ring-ok ${jn?'done':''}">${I.check}</span></div>
     ${jDoneK(k)?`<p>Ausgefüllt · ${jn} von ${allQ().length} Fragen beantwortet.</p><button class="linkb" data-go="logbuch">LOGBUCH BEARBEITEN ${I.chev}</button></div>`:`
@@ -1276,7 +1280,7 @@ const ntDec=()=>store.ntDec||(store.ntDec={});
 async function ntDelDoc(id){if(!store.nt)return;try{await ntFetch(`/rest/v1/docs?user_id=eq.${store.nt.uid}&col=eq.food&id=eq.${encodeURIComponent(id)}`,{method:'DELETE'})}catch(e){}}
 function ntImport(m){const d=m.data||{},t0=d.t||fromIso(m.date).getTime(),min=+d.min||0,c=dCat(d.name);
   sessions().push({id:'nt-'+m.id,src:'nutrac',nid:m.id,date:m.date,t0,t1:t0+min*6e4,type:c===4?'k':'a',sp:c===4?null:(d.name||'Sport'),name:d.name||'Sport',kcal:d.kcal!=null?Math.round(+d.kcal):null,ex:[],nt:1});ntDec()[m.id]='import'}
-async function ntDup(rows){const sp=rows.filter(x=>x.data&&x.data.kind==='sport'&&x.date),man=sp.filter(x=>!String(x.id).startsWith('whoop-')&&x.data.src!=='whoop'),ids=new Set(man.map(x=>x.id)),cut=shift(iso(new Date()),-45);
+async function ntDup(rows){const sp=rows.filter(x=>x.data&&x.data.kind==='sport'&&x.date),man=sp.filter(x=>!String(x.id).startsWith('whoop-')&&x.data.src!=='whoop'&&x.data.steps==null&&!/schritt/i.test(x.data.name||'')),ids=new Set(man.map(x=>x.id)),cut=shift(iso(new Date()),-45);
   store.sess=sessions().filter(s=>!(s.src==='nutrac'&&s.date>=cut&&!ids.has(s.nid)));
   const asks=store.ntAsk=(store.ntAsk||[]).filter(q=>ids.has(q.nid)&&sessions().some(s=>s.id===q.sid));let merged=0,newAsk=0;
   for(const m of man){if(ntDec()[m.id]||asks.some(q=>q.nid===m.id))continue;const b={date:m.date,t:m.data.t,name:m.data.name,min:+m.data.min||0,kcal:+m.data.kcal||0};
@@ -1353,7 +1357,12 @@ const rById=id=>routines().find(r=>r.id===id);
 function planOf(d){store.plan=store.plan||{};return store.plan[d]||(store.plan[d]=[])}
 const sessions=()=>store.sess||(store.sess=[]);
 const itName=o=>o.rid?((rById(o.rid)||{}).name||'Routine gelöscht'):o.sp+(o.ti?' · '+o.ti:'');
-const itDone=(o,k)=>sessions().some(s=>s.date===k&&(o.rid?s.rid===o.rid:s.type==='a'&&!s.rid&&s.sp===o.sp));
+function planMatch(k){const pl=planOf(wdOf(k)),ss=sessions().filter(s=>s.date===k&&s.t1),used=new Set(),res=pl.map(()=>null);
+  pl.forEach((o,i)=>{const s=o.rid&&ss.find(x=>!used.has(x.id)&&x.rid===o.rid);if(s){used.add(s.id);res[i]=s}});
+  pl.forEach((o,i)=>{if(res[i])return;const r=o.rid?rById(o.rid):null,t=r?rType(r):o.t,sp=r?r.sp:o.sp;
+    const s=ss.find(x=>!used.has(x.id)&&x.type===t&&(t==='k'||!sp||dCat(x.sp||x.name)===dCat(sp)))||ss.find(x=>!used.has(x.id)&&x.type===t);if(s){used.add(s.id);res[i]=s}});
+  return res}
+const itDone=(o,k)=>{const pl=planOf(wdOf(k)),i=pl.indexOf(o);return i>=0&&!!planMatch(k)[i]};
 const rMeta=r=>{const ds=WDN.filter((n,i)=>planOf(i).some(o=>o.rid===r.id)),pre=ds.length?ds.join(', ')+' · ':'';if(rType(r)==='a')return pre+r.sp;const v=r.items.filter(i=>!i.h).length;return pre+v+' Übung'+(v===1?'':'en')};
 const rng=(a,f=x=>x)=>{a=a.filter(v=>v!=null&&v!=='');if(!a.length)return '';const lo=Math.min(...a),hi=Math.max(...a);return lo===hi?f(lo):f(lo)+'–'+f(hi)};
 const iMeta=i=>{if(Array.isArray(i.sets)&&i.sets.length){const kg=rng(i.sets.map(x=>x.kg),kgf),r=rng(i.sets.map(x=>x.r));return i.sets.length+' Sätze · '+r+(i.u==='s'?' s':' Wdh.')+(kg?' · '+kg+' kg':'')}return i.s+' × '+i.r+(i.u==='s'?' s':'')+(i.kg?' · '+kgf(i.kg)+' kg':'')};
