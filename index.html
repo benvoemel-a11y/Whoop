@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793474404";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793474521";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1344,10 +1344,10 @@ function sheetSess(id){const s=sessions().find(x=>x.id===id);if(!s)return;const 
 function startK(r){store.act={id:uid(),date:iso(new Date()),t0:Date.now(),type:'k',name:r?r.name:'Freies Krafttraining',rid:r?r.id:null,
   ex:r?r.items.filter(i=>!i.h).map(i=>({n:i.n,u:i.u,sets:Array.from({length:Math.max(1,i.s|0)},()=>({kg:i.kg??null,r:i.r??null,d:0}))})):[]};save();go('workout')}
 function startA(sp,ti,note,rid,nm){store.act={id:uid(),date:iso(new Date()),t0:Date.now(),type:'a',sp,rid:rid||null,name:nm||sp+(ti?' · '+ti:''),note0:note||'',laps:[],pause:0,pausedAt:null};save();$('#sheet').hidden=true;go('workout')}
-function addEx(to,n){n=String(n||'').trim();if(!n)return;const u=TIMED.includes(n)?'s':'r';
-  if(to==='r'){const r=rById(tRid);if(!r)return;const ix=r.items.findIndex(i=>i.n===n);if(ix>=0){r.items.splice(ix,1);tOpen=-1;save();render();const sb=$('#sheetBox');sheetAddEx.y=sb?sb.scrollTop:0;sheetAddEx(to);sheetAddEx.y=0;return}r.items.push({n,s:3,r:u==='s'?60:10,kg:null,u});tOpen=r.items.length-1}
-  else{const a=store.act;if(!a)return;const ex=a.ex.findIndex(e=>e.n===n);if(ex>=0){if(a.ex[ex].sets.some(x=>x.d)){toast('Hat schon erledigte Sätze');return}a.ex.splice(ex,1);save();render();const sb=$('#sheetBox');sheetAddEx.y=sb?sb.scrollTop:0;sheetAddEx(to);sheetAddEx.y=0;return}const ls=lastSets(n);a.ex.push({n,u,sets:ls?ls.map(x=>({kg:x.kg,r:x.r,d:0})):Array.from({length:3},()=>({kg:null,r:u==='s'?60:10,d:0}))})}
-  if(!lib('kraft').some(o=>o.n===n))lib('kraft').push({n,c:1});save();render();const sb=$('#sheetBox');sheetAddEx.y=sb?sb.scrollTop:0;sheetAddEx(to);sheetAddEx.y=0}
+function addEx(to,n){n=String(n||'').trim();if(!n)return;const so=!$('#sheet').hidden,re=()=>{if(!so)return;const sb=$('#sheetBox');sheetAddEx.y=sb?sb.scrollTop:0;sheetAddEx(to);sheetAddEx.y=0};const u=TIMED.includes(n)?'s':'r';
+  if(to==='r'){const r=rById(tRid);if(!r)return;const ix=r.items.findIndex(i=>i.n===n);if(ix>=0){r.items.splice(ix,1);tOpen=-1;save();render();re();return}r.items.push({n,s:3,r:u==='s'?60:10,kg:null,u});tOpen=r.items.length-1}
+  else{const a=store.act;if(!a)return;const ex=a.ex.findIndex(e=>e.n===n);if(ex>=0){if(a.ex[ex].sets.some(x=>x.d)){toast('Hat schon erledigte Sätze');return}a.ex.splice(ex,1);save();render();re();return}const ls=lastSets(n);a.ex.push({n,u,sets:ls?ls.map(x=>({kg:x.kg,r:x.r,d:0})):Array.from({length:3},()=>({kg:null,r:u==='s'?60:10,d:0}))})}
+  if(!lib('kraft').some(o=>o.n===n))lib('kraft').push({n,c:1});save();render();re()}
 function tChange(el){const f=el.dataset.tf,v=el.value;
   if(f==='rname'){const r=rById(tRid);if(r){r.name=v.trim()||'Routine';save()}}
   else if(f==='iv'){const r=rById(tRid),it=r&&r.items[+el.dataset.i];if(!it)return;const x=tnum(v);if(el.dataset.f==='kg')it.kg=x;else if(x!=null&&x>0)it[el.dataset.f]=Math.round(x);save();
