@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793484989";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793537055";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -961,9 +961,12 @@ function lastBody(k,f){const ds=days().filter(x=>x<=k&&f(x)!=null);return ds.len
 let kRange=14,kOpen=false;
 function bmrOf(k){const ks=Object.keys(store.daily||{}).filter(d=>d<=k&&store.daily[d].bmr).sort();if(ks.length)return {v:store.daily[ks[ks.length-1]].bmr,src:'Withings'};
   const w=bodyKg(),h=store.height||170,a=store.age||25;return {v:Math.round(10*w+6.25*h-5*a+5),src:'geschätzt'}}
+// Schritte während eines Trainings (zählen nicht als Alltags-Schritte, das Training hat eigene kcal)
+const STEPW=['lauf','run','jogg','wander','hike','spazier','geh','walk'];
+function trainSteps(s){if(!s||s.type==='k')return 0;if(s.dist)return Math.round(s.dist*1300);const n=String(s.sp||s.name||'').toLowerCase();return STEPW.some(w=>n.includes(w))?Math.round(elapsed(s)/6e4*150):0}
 function kParts(k){const x=D(k),ss=sessions().filter(s=>s.date===k),tr=ss.reduce((a,s)=>a+(s.kcal||0),0);
   if(x.kcal==null&&x.akcal==null&&x.steps==null&&!tr)return null;const b=bmrOf(k).v;let alltag;
-  if(x.steps!=null){const ts=ss.reduce((a,s)=>a+(s.type!=='k'&&s.dist?s.dist*1300:0),0);alltag=Math.round(Math.max(0,x.steps-ts)*bodyKg()*0.0005)}
+  if(x.steps!=null){const ts=ss.reduce((a,s)=>a+trainSteps(s),0);alltag=Math.round(Math.max(0,x.steps-ts)*bodyKg()*0.0005)}
   else{const act=x.akcal!=null?x.akcal:Math.max(0,(x.kcal||0)-b);alltag=Math.max(0,act-tr)}
   return {bmr:b,alltag,tr,act:alltag+tr,tot:b+alltag+tr}}
 const kTot=k=>{const p=kParts(k);return p?p.tot:null};
@@ -1313,7 +1316,14 @@ async function ntPush(s){if(!store.nt||store.ntOff||s.src==='nutrac')return fals
   const data={kind:'sport',date:s.date,t:s.t0,name:s.name,kcal:kc,min:Math.round(elapsed(s)/60000),src:'whoop'};
   await ntFetch('/rest/v1/docs',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:store.nt.uid,col:'food',id:'whoop-'+s.id,date:s.date,data,updated_at:new Date().toISOString()})});
   s.nt=1;save();return true}
-async function ntPushAll(){if(!store.nt||store.ntOff)return;const cut=shift(iso(new Date()),-14);for(const s of sessions()){if(!s.nt&&s.date>=cut){try{await ntPush(s)}catch(e){break}}}}
+async function ntPushAll(){if(!store.nt||store.ntOff)return;const cut=shift(iso(new Date()),-14);for(const s of sessions()){if(!s.nt&&s.date>=cut){try{await ntPush(s)}catch(e){break}}}await ntPushSteps()}
+// Tages-Schritte an Nutrac: Alltags-Schritte = Band-Schritte minus Schritte im Training.
+// Gleiche ID wie die Schritte-Eingabe in Nutrac ("steps-Datum") → ersetzt dort den Ø-Wert, nichts doppelt.
+async function ntPushSteps(){if(!store.nt||store.ntOff)return;const cut=shift(iso(new Date()),-14),sent=store.ntSteps||(store.ntSteps={});
+  for(const k of Object.keys(store.daily||{}).filter(d=>d>=cut).sort()){const tot=store.daily[k].steps;if(tot==null)continue;
+    const ts=sessions().filter(s=>s.date===k).reduce((a,s)=>a+trainSteps(s),0),alltag=Math.max(0,Math.round(tot-ts)),sig=tot+'-'+ts;if(sent[k]===sig)continue;
+    const data={kind:'steps',date:k,t:fromIso(k).getTime()+9*36e5,steps:alltag,total:Math.round(tot),trainSteps:ts,src:'whoop'};
+    try{await ntFetch('/rest/v1/docs',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:store.nt.uid,col:'food',id:'steps-'+k,date:k,data,updated_at:new Date().toISOString()})});sent[k]=sig;save()}catch(e){break}}}
 async function ntDel(id){if(!store.nt)return;try{await ntFetch(`/rest/v1/docs?user_id=eq.${store.nt.uid}&col=eq.food&id=eq.whoop-${encodeURIComponent(id)}`,{method:'DELETE'})}catch(e){}}
 function ntBody(){const n=store.nt;
   if(!n)return `<p class="about" style="margin-top:0">Mit deinem Nutrac-Konto anmelden. Dann siehst du unter <b>Kalorien</b>, was du gegessen hast, und deine Trainings landen automatisch in Nutrac.</p>
@@ -1714,7 +1724,7 @@ document.addEventListener('change',async e=>{
   else if(e.target.id==='file'){const done=[],files=[...e.target.files];const m0=$('#msg');if(m0){m0.className='msg';m0.textContent='Wird gelesen …'}
     for(const f of files){try{let r=null;if(/\.pdf$/i.test(f.name)||f.type==='application/pdf')r=await importPdf(f);else{const t=await f.text();r=importRows(parseCSV(t))}if(r)done.push(r)}catch(err){console.error(err)}}
     e.target.value='';
-    if(done.length){store.real=true;save();cur=null;pickData();render();const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.'}
+    if(done.length){store.real=true;save();cur=null;pickData();render();ntPushAll().catch(()=>{});const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.'}
     else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Erkannt werden Withings-Berichte (PDF), weight.csv und der CSV-Export aus OpenStrap.'}}}
 });
 document.addEventListener('input',e=>{if(e.target.id==='wipeword'){const ok=e.target.value.trim().toUpperCase()==='LÖSCHEN',b=$('#wipe3');if(b){b.disabled=!ok;b.style.opacity=ok?1:.4}}});
