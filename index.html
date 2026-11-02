@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793624787";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793625542";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -525,6 +525,13 @@ html,body{min-height:100%}
 .napd{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:10px}
 .napd button{background:var(--card);border-radius:10px;padding:12px 0;font-family:var(--num);font-weight:700;font-size:16px;color:var(--muted);text-align:center}
 .napd button[aria-pressed="true"]{background:var(--sleep);color:#10222e}
+.slsplit{padding:14px}
+.slsplit .ssh span{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--muted)}
+.slsplit>div:not(.ssh){display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+.slsplit>div:last-child{border:0}
+.slsplit small{display:block;font-size:12px;color:var(--muted);margin-left:18px;margin-top:2px}
+.slsplit b{font-size:20px}.slsplit .tot b{color:var(--sleep)}
+.sq2{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px}
 </style>
 </head>
 <body>
@@ -729,6 +736,8 @@ const MET={
   resp:{n:'Atemfrequenz',ic:'lungs',f:k=>D(k).resp,v:v=>fmt(v,1),good:0,u:'/min'},
   perf:{n:'Schlafleistung',ic:'moon',f:perf,v:pct,good:1},
   sleep:{n:'Geschlafene Stunden',ic:'moon',f:k=>tSleep(k),v:hm,good:1},
+  night:{n:'Davon nachts',ic:'bed',f:k=>D(k).sleep,v:hm,good:1},
+  nap:{n:'Davon Mittagsschlaf',ic:'moon',f:k=>napMin(k)||null,v:hm,good:1},
   resto:{n:'Erholsamer Schlaf',ic:'restore',f:resto,v:hm,good:1},
   inbed:{n:'Zeit im Bett',ic:'bed',f:k=>nightInfo(k)?.bed??(D(k).bed&&D(k).up?(D(k).up-D(k).bed)/6e4:null),v:hm,good:0},
   eff:{n:'Schlafeffizienz',ic:'moon',f:k=>D(k).eff,v:pct,good:1},
@@ -862,11 +871,15 @@ function vSleep(k){const x=D(k),p=perf(k),ni=nightInfo(k),nd=need(k);
   <div class="sp"><div class="sp-big num">${pct(p)}</div><i class="br l"></i><i class="br r"></i>
     <div class="sp-sides"><div><b class="num" style="color:var(--sleep)">${hm(tSleep(k))}</b><span class="tag" style="color:var(--sleep);border-color:var(--sleep)">SCHLAFSTUNDEN</span></div>
     <div><b class="num" style="color:var(--mint)">${hm(nd)}</b><span class="tag" style="color:var(--mint);border-color:var(--mint)">SCHLAFBEDARF</span></div></div></div>
+  ${napMin(k)?`<div class="card slsplit"><div class="ssh"><span>WORAUS BESTEHT DEIN SCHLAF?</span></div>
+    <div><span><i class="sq2" style="background:var(--sleep)"></i>Nacht</span><b class="num">${hm(D(k).sleep)}</b></div>
+    <div><span><i class="sq2" style="background:var(--sleep);opacity:.55"></i>Mittagsschlaf<small>${napsOf(k).length===1?'1 Einheit':napsOf(k).length+' Einheiten'}</small></span><b class="num">${hm(napMin(k))}</b></div>
+    <div class="tot"><span>Gesamt</span><b class="num">${hm(tSleep(k))}</b></div></div>`:''}
   ${insight(...sleepInsight(k))}
-  <div class="sec"><span>Schlafaktivitäten</span><button class="mini" data-act="sleepedit" style="color:var(--fg)">BEARBEITEN ${I.pencil}</button></div>${D(k).sleepManual?'<p class="hint" style="margin:-4px 0 8px">Von dir angepasst</p>':''}${sleepRow(k)?`<div>${sleepRow(k)}</div>`:'<p class="empty">Keine Schlafaktivität.</p>'}
+  <div class="sec"><span>Schlafaktivitäten</span><button class="mini" data-act="sleepedit" style="color:var(--fg)">BEARBEITEN ${I.pencil}</button></div>${D(k).sleepManual?'<p class="hint" style="margin:-4px 0 8px">Von dir angepasst</p>':''}${sleepRow(k)+napRows(k)?`<div>${sleepRow(k)+napRows(k)}</div>`:'<p class="empty">Keine Schlafaktivität.</p>'}
   ${night}
   <div class="sec"><span>Schlafstatistik</span><span>vs. letzte 30 Tage</span></div>
-  ${['sleep','perf','resto','inbed','eff'].map(m=>mrow(m,k)).join('')}`}
+  ${(napMin(k)?['sleep','night','nap','perf','resto','inbed','eff']:['sleep','perf','resto','inbed','eff']).map(m=>mrow(m,k)).join('')}`}
 
 function recInsight(r,k){const t=target(r);if(r==null)return['KEINE ERHOLUNG','Für diesen Tag gibt es noch keinen Erholungswert.'];
   if(r>=67)return['DEIN KÖRPER IST BEREIT',`Grüne Erholung. Dein Körper kann heute viel leisten. Ein Belastungsziel von ${t} passt gut.`];
