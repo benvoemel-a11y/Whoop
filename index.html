@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793625542";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793625722";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -876,7 +876,7 @@ function vSleep(k){const x=D(k),p=perf(k),ni=nightInfo(k),nd=need(k);
     <div><span><i class="sq2" style="background:var(--sleep);opacity:.55"></i>Mittagsschlaf<small>${napsOf(k).length===1?'1 Einheit':napsOf(k).length+' Einheiten'}</small></span><b class="num">${hm(napMin(k))}</b></div>
     <div class="tot"><span>Gesamt</span><b class="num">${hm(tSleep(k))}</b></div></div>`:''}
   ${insight(...sleepInsight(k))}
-  <div class="sec"><span>Schlafaktivitäten</span><button class="mini" data-act="sleepedit" style="color:var(--fg)">BEARBEITEN ${I.pencil}</button></div>${D(k).sleepManual?'<p class="hint" style="margin:-4px 0 8px">Von dir angepasst</p>':''}${sleepRow(k)+napRows(k)?`<div>${sleepRow(k)+napRows(k)}</div>`:'<p class="empty">Keine Schlafaktivität.</p>'}
+  <div class="sec"><span>Schlafaktivitäten</span><span style="display:flex;gap:14px"><button class="mini" data-act="napadd" style="color:var(--fg)">+ MITTAGSSCHLAF</button><button class="mini" data-act="sleepedit" style="color:var(--fg)">NACHT ${I.pencil}</button></span></div>${D(k).sleepManual?'<p class="hint" style="margin:-4px 0 8px">Von dir angepasst</p>':''}${sleepRow(k)+napRows(k)?`<div>${sleepRow(k)+napRows(k)}</div>`:'<p class="empty">Keine Schlafaktivität.</p>'}
   ${night}
   <div class="sec"><span>Schlafstatistik</span><span>vs. letzte 30 Tage</span></div>
   ${(napMin(k)?['sleep','night','nap','perf','resto','inbed','eff']:['sleep','perf','resto','inbed','eff']).map(m=>mrow(m,k)).join('')}`}
@@ -1296,7 +1296,7 @@ const napMin=k=>napsOf(k).reduce((a,n)=>a+Math.round((n.t1-n.t0)/6e4),0);
 const napDur=()=>store.napDur||25;
 const napLeft=()=>store.nap?store.nap.t0+store.nap.dur*6e4-Date.now():0;
 function napRows(k){return napsOf(k).map(n=>{const mn=Math.round((n.t1-n.t0)/6e4);
-  return `<button class="act act-s" data-act="napdel" data-id="${n.id}"><div class="badge" style="background:var(--sleep);opacity:.9">${I.moon}<span>${hm(mn)}</span></div><div class="act-n">MITTAGSSCHLAF</div>
+  return `<button class="act act-s" data-act="napedit" data-id="${n.id}"><div class="badge" style="background:var(--sleep);opacity:.9">${I.moon}<span>${hm(mn)}</span></div><div class="act-n">MITTAGSSCHLAF</div>
   <div class="act-t"><span>${tm(n.t0)}</span><span>${tm(n.t1)}</span></div><i class="act-b" style="background:var(--sleep)"></i></button>`}).join('')}
 function napTile(){const a=store.nap;
   if(a)return `<button class="outlook nap live" data-go="nap">${I.moon}<span class="nt"><b class="num" id="nap-c">${mmss(Math.max(0,napLeft()))}</b><small>bis ${tm(a.t0+a.dur*6e4)}</small></span></button>`;
@@ -1315,7 +1315,30 @@ function vNap(){const a=store.nap,k=iso(new Date()),done=napsOf(k),tot=napMin(k)
   <div class="field"><label for="napown">Eigene Dauer (Min)</label><input id="napown" inputmode="numeric" value="${napDur()}"></div>
   <button class="btn w" data-act="napstart" style="margin-top:18px">MITTAGSSCHLAF STARTEN</button>
   <p class="hint" style="text-align:center;font-size:13px">Am Ende weckt dich eine Benachrichtigung. Der Mittagsschlaf zählt zu deinem Schlaf und senkt deinen Bedarf für die nächste Nacht.</p>
-  ${done.length?`<div class="sec"><span>Heute</span><span>${hm(tot)} insgesamt</span></div><div class="card" style="margin-top:0;padding:6px 14px 14px">${napRows(k)}</div><p class="hint" style="font-size:13px">Tippe auf einen Eintrag, um ihn zu löschen.</p>`:''}`}
+  <button class="btn g" data-act="napadd">MITTAGSSCHLAF NACHTRAGEN</button>
+  ${done.length?`<div class="sec"><span>Heute</span><span>${hm(tot)} insgesamt</span></div><div class="card" style="margin-top:0;padding:6px 14px 14px">${napRows(k)}</div><p class="hint" style="font-size:13px">Tippe auf einen Eintrag, um ihn zu ändern oder zu löschen.</p>`:''}`}
+function sheetNap(id){const n=id?naps().find(x=>x.id===id):null,k=n?n.date:(cur||iso(new Date()));
+  const d0=n?new Date(n.t0):new Date(),d1=n?new Date(n.t1):new Date(Date.now()+napDur()*6e4);
+  const hhmm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  openSheet(n?'MITTAGSSCHLAF BEARBEITEN':'MITTAGSSCHLAF NACHTRAGEN',`
+    <div class="field"><label for="np_d">Tag</label><input id="np_d" type="date" value="${k}" max="${iso(new Date())}"></div>
+    <div class="field"><label for="np_a">Von</label><input id="np_a" type="time" value="${hhmm(d0)}"></div>
+    <div class="field"><label for="np_b">Bis</label><input id="np_b" type="time" value="${hhmm(d1)}"></div>
+    <p class="hint" style="font-size:13px">Der Mittagsschlaf zählt zu deinem Schlaf an diesem Tag und senkt den Bedarf für die Nacht danach.</p>
+    <button class="btn w" data-act="napsave" ${id?`data-id="${id}"`:''} style="margin-top:16px">SPEICHERN</button>
+    ${id?`<button class="btn warn" data-act="napdel" data-id="${id}">LÖSCHEN</button>`:''}
+    <button class="btn g" data-act="close">ABBRECHEN</button>`)}
+function napSave(id){const dv=$('#np_d').value,a=$('#np_a').value,b=$('#np_b').value;
+  if(!dv||!a||!b){toast('Bitte Tag und beide Uhrzeiten ausfüllen');return}
+  const mk=t=>{const[h,m]=t.split(':').map(Number),d=fromIso(dv);d.setHours(h,m,0,0);return d.getTime()};
+  let t0=mk(a),t1=mk(b);if(t1<=t0)t1+=864e5;
+  const mn=Math.round((t1-t0)/6e4);
+  if(mn<1||mn>480){toast('Dauer muss zwischen 1 Minute und 8 Stunden liegen');return}
+  if(t0>Date.now()+6e4){toast('Das liegt in der Zukunft');return}
+  const old=id?naps().find(x=>x.id===id):null;
+  if(old){old.date=dv;old.t0=t0;old.t1=t1}else naps().push({id:uid(),date:dv,t0,t1});
+  const jk=jKey(shift(dv,1));store.journal[jk]=Object.assign({},store.journal[jk],{nap:1});
+  save();$('#sheet').hidden=true;cur=dv;pickData();render();toast(old?'Gespeichert':'Nachgetragen: '+hm(mn))}
 function napStart(){const d=Math.round(tnum(($('#napown')||{}).value)||napDur());if(!(d>0&&d<=240)){toast('Bitte 1 bis 240 Minuten');return}
   store.napDur=d;store.nap={id:uid(),date:iso(new Date()),t0:Date.now(),dur:d};save();pushSyncSoon();render();toast('Gute Erholung')}
 function napStop(save2){const a=store.nap;if(!a)return;const mn=Math.round((Date.now()-a.t0)/6e4);store.nap=null;
@@ -1724,7 +1747,10 @@ function act(a,el){
   if(a==='napstop'){napStop(true);return}
   if(a==='napplus'){if(store.nap){store.nap.dur+=5;save();pushSyncSoon();render()}return}
   if(a==='napcancel'){napStop(false);return}
-  if(a==='napdel'){const n=naps().find(x=>x.id===el.dataset.id);if(!n)return;store.naps=naps().filter(x=>x.id!==el.dataset.id);save();pickData();render();toast('Gelöscht');return}
+    if(a==='napedit'){sheetNap(el.dataset.id);return}
+  if(a==='napadd'){sheetNap(null);return}
+  if(a==='napsave'){napSave(el.dataset.id||null);return}
+  if(a==='napdel'){store.naps=naps().filter(x=>x.id!==el.dataset.id);save();$('#sheet').hidden=true;pickData();render();toast('Mittagsschlaf gelöscht');return}
   if(a==='nt-login'){ntLogin();return}
   if(a==='dq-same'){sheetSame();return}
   if(a==='dq-save'){dqResolve(true);return}
