@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793625722";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793630087";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -532,6 +532,9 @@ html,body{min-height:100%}
 .slsplit small{display:block;font-size:12px;color:var(--muted);margin-left:18px;margin-top:2px}
 .slsplit b{font-size:20px}.slsplit .tot b{color:var(--sleep)}
 .sq2{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px}
+.slbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:-4px 0 10px}
+.slbtns button{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--card);border-radius:12px;padding:13px 10px;font-size:14px;font-weight:700;color:var(--fg)}
+.slbtns svg{width:17px;height:17px;flex:none;color:var(--sleep)}
 </style>
 </head>
 <body>
@@ -876,7 +879,8 @@ function vSleep(k){const x=D(k),p=perf(k),ni=nightInfo(k),nd=need(k);
     <div><span><i class="sq2" style="background:var(--sleep);opacity:.55"></i>Mittagsschlaf<small>${napsOf(k).length===1?'1 Einheit':napsOf(k).length+' Einheiten'}</small></span><b class="num">${hm(napMin(k))}</b></div>
     <div class="tot"><span>Gesamt</span><b class="num">${hm(tSleep(k))}</b></div></div>`:''}
   ${insight(...sleepInsight(k))}
-  <div class="sec"><span>Schlafaktivitäten</span><span style="display:flex;gap:14px"><button class="mini" data-act="napadd" style="color:var(--fg)">+ MITTAGSSCHLAF</button><button class="mini" data-act="sleepedit" style="color:var(--fg)">NACHT ${I.pencil}</button></span></div>${D(k).sleepManual?'<p class="hint" style="margin:-4px 0 8px">Von dir angepasst</p>':''}${sleepRow(k)+napRows(k)?`<div>${sleepRow(k)+napRows(k)}</div>`:'<p class="empty">Keine Schlafaktivität.</p>'}
+  <div class="sec"><span>Schlafaktivitäten</span></div>
+  <div class="slbtns"><button data-act="napadd">${I.plus}<span>Mittagsschlaf</span></button><button data-act="sleepedit">${I.pencil}<span>Nacht bearbeiten</span></button></div>${D(k).sleepManual?'<p class="hint" style="margin:-4px 0 8px">Von dir angepasst</p>':''}${sleepRow(k)+napRows(k)?`<div>${sleepRow(k)+napRows(k)}</div>`:'<p class="empty">Keine Schlafaktivität.</p>'}
   ${night}
   <div class="sec"><span>Schlafstatistik</span><span>vs. letzte 30 Tage</span></div>
   ${(napMin(k)?['sleep','night','nap','perf','resto','inbed','eff']:['sleep','perf','resto','inbed','eff']).map(m=>mrow(m,k)).join('')}`}
