@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793810119";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793811175";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1248,6 +1248,13 @@ const SB_URL='https://wjbvodjiqjtlezuzgrzn.supabase.co',SB_KEY='eyJhbGciOiJIUzI1
 const rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
 function pushIds(){if(!store.pushId){store.pushId=crypto.randomUUID?crypto.randomUUID():([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));store.pushTok=rnd(32);save()}return{id:store.pushId,token:store.pushTok}}
 const sbPost=(path,body)=>fetch(SB_URL+path,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify(body)});
+/* Schritte-Cloud: Safari (Kurzbefehl) schreibt, Homescreen-App liest */
+const stUp=(day,steps)=>fetch(SB_URL+'/rest/v1/whoop_steps?on_conflict=day',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({day,steps,updated_at:new Date().toISOString()})}).catch(()=>{});
+let stLast=0;
+async function stPull(){if(Date.now()-stLast<20000)return;stLast=Date.now();
+  try{const r=await fetch(SB_URL+'/rest/v1/whoop_steps?select=day,steps&day=gte.'+shift(iso(new Date()),-30),{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},cache:'no-store'});if(!r.ok)return;
+    let ch=false;for(const x of await r.json()){const o=store.daily[x.day]||{};if(o.hSteps==null||x.steps>o.hSteps){store.daily[x.day]=Object.assign({},o,{hSteps:x.steps});ch=true}}
+    if(ch){store.real=true;save();if(typeof pickData==='function')pickData();render()}}catch(e){}}
 let pushBusy=false,pushErr=false,pushT=null;
 async function pushSync(){if(!store.push)return;const cfg=cfgString();if(cfg===store.pushSynced){pushErr=false;return}
   pushBusy=true;try{const{id,token}=pushIds();let tz='Europe/Berlin';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||tz}catch(e){}
@@ -1945,7 +1952,7 @@ addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v
 load();(function(){const q=location.search;let msg=[];
   const mb=/[?&]bat=(\d{1,3})\b/.exec(q);if(mb){const v=+mb[1];if(v>=0&&v<=100){batSet(v,'url');msg.push('Akku '+v+' %')}}
   const ms=/[?&]steps=(\d{1,6})\b/.exec(q);if(ms){const v=+ms[1],md=/[?&]date=(\d{4}-\d{2}-\d{2})\b/.exec(q),d=md?md[1]:iso(new Date());
-    if(v>=0&&v<=200000){store.daily[d]=Object.assign({},store.daily[d],{hSteps:v});store.real=true;save();msg.push(fmt(v)+' Schritte')}}
+    if(v>=0&&v<=200000){store.daily[d]=Object.assign({},store.daily[d],{hSteps:v});store.real=true;save();stUp(d,v);msg.push(fmt(v)+' Schritte')}}
   if(msg.length)setTimeout(()=>toast('Übernommen: '+msg.join(' · ')),400);
   try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}})();
 const h0=fromHash(location.hash.slice(1));if(h0)view=h0;
@@ -1953,7 +1960,7 @@ pickData();render();
 setTimeout(pushSync,1500);
 (function(){const vv=window.visualViewport;if(!vv)return;
   const fix=()=>{const foc=/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'');document.body.classList.toggle('kb',foc&&vv.height<window.innerHeight*.8)};
-  vv.addEventListener('resize',fix);addEventListener('focusin',()=>setTimeout(fix,300));addEventListener('focusout',()=>setTimeout(fix,300));fix()})();setTimeout(()=>ntPull(true),800);document.addEventListener('visibilitychange',()=>{if(!document.hidden)ntPull()});addEventListener('online',pushSync);
+  vv.addEventListener('resize',fix);addEventListener('focusin',()=>setTimeout(fix,300));addEventListener('focusout',()=>setTimeout(fix,300));fix()})();setTimeout(()=>ntPull(true),800);document.addEventListener('visibilitychange',()=>{if(!document.hidden){ntPull();stLast=0;stPull()}});setTimeout(stPull,600);addEventListener('online',pushSync);
 })();
 </script>
 
