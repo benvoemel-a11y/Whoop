@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793786189";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793786906";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1138,8 +1138,9 @@ function batRate(){const L=batLog().filter(x=>Date.now()-x.t<20*864e5),rs=[];
 function batNow(){const b=store.bat;if(!b)return null;
   const h=(Date.now()-b.at)/36e5;if(h<0.5)return {p:b.p,gesch:false};
   const p=Math.max(0,b.p-batRate().r*h/24);return {p:Math.round(p),gesch:true}}
-function batLowAt(){const b=store.bat;if(!b)return null;const r=batRate().r;if(r<=0)return null;
-  const t=b.at+(b.p-15)/r*864e5;return t>Date.now()?t:null}
+function batAtPct(pct){const b=store.bat;if(!b)return null;const r=batRate().r;if(r<=0)return null;
+  const t=b.at+(b.p-pct)/r*864e5;return t>Date.now()?t:null}
+const batLowAt=()=>batAtPct(15);
 function batDays(){const L=batLog().filter(x=>Date.now()-x.t<12*864e5);if(L.length<2)return null;
   let a=null,b=null;for(let i=L.length-1;i>0;i--){if(L[i].p<L[i-1].p){b=L[i];a=L[i-1];break}}
   const r=batRate().r,now=batNow();if(!now||r<=0)return null;const left=now.p/r;return left>=0&&left<30?left:null}
@@ -1220,7 +1221,7 @@ const pushOk=()=>'serviceWorker'in navigator&&'PushManager'in window&&'Notificat
 const DEF_REM=()=>[{t:'07:00',title:'Guten Morgen',body:'Deine Werte der Nacht sind da. Importiere sie und füll dein Logbuch für gestern aus.',url:'./#mehr',on:true},{t:'14:00',title:'Update am Mittag',body:'Neue Werte bereit: jetzt importieren.',url:'./#mehr',on:true},{t:'22:00',title:'Abend-Update',body:'Deine Tageswerte sind bereit: jetzt importieren.',url:'./#mehr',on:true}];
 const DEF_MON=()=>({day:1,t:'10:00',on:true});
 const pRem=()=>store.pushRem||(store.pushRem=DEF_REM());const pMon=()=>store.pushMon||(store.pushMon=DEF_MON());
-function cfgString(){if(!store.push)return '';return JSON.stringify(Object.assign(JSON.parse(store.push),{rem:pRem(),mon:pMon(),nap:store.nap?{at:store.nap.t0+store.nap.dur*6e4,dur:store.nap.dur}:null,bat:store.bat?{at:batLowAt()||0}:null,ntuid:store.nt?store.nt.uid:null,ntDone:Object.keys(store.ntDec||{}).slice(-150)}))}
+function cfgString(){if(!store.push)return '';return JSON.stringify(Object.assign(JSON.parse(store.push),{rem:pRem(),mon:pMon(),nap:store.nap?{at:store.nap.t0+store.nap.dur*6e4,dur:store.nap.dur}:null,bat:store.bat?{at:batLowAt()||0,at5:batAtPct(5)||0}:null,ntuid:store.nt?store.nt.uid:null,ntDone:Object.keys(store.ntDec||{}).slice(-150)}))}
 const SB_URL='https://wjbvodjiqjtlezuzgrzn.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqYnZvZGppcWp0bGV6dXpncnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMjk5NDAsImV4cCI6MjEwODcwNTk0MH0.hk7c23aKSk_O8bUMJoL2ActBDHpAdOgxZI9K_0bvEyM';
 const rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
 function pushIds(){if(!store.pushId){store.pushId=crypto.randomUUID?crypto.randomUUID():([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));store.pushTok=rnd(32);save()}return{id:store.pushId,token:store.pushTok}}
