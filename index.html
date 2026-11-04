@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793808252";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793808445";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -680,11 +680,10 @@ function importRows(rows){
     Object.entries(best).forEach(([d,v])=>{store.daily[d]=Object.assign({},store.daily[d],{weight:+v.w.toFixed(1)},v.f!=null?{fat:v.f}:{},v.mu!=null?{muscle:+v.mu.toFixed(1)}:{},v.bo!=null?{bone:+v.bo.toFixed(1)}:{},v.hy!=null&&v.w?{water:+(v.hy/v.w*100).toFixed(1)}:{})});
     if(Object.keys(best).length)addDev('withings');return Object.keys(best).length?'Gewicht':null}
   if(h.includes('readiness')||h.includes('resting_hr')){
-    rows.forEach(r=>{if(!r.date)return;const old=store.daily[r.date];let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
+    rows.forEach(r=>{if(!r.date)return;let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
       store.daily[r.date]=Object.assign({},store.daily[r.date],{rec:rec==null?null:Math.round(rec),rhr:n(r.resting_hr),hrv:n(r.hrv),resp:n(r.resp_rate),strain:n(r.strain),
         kcal:n(r.total_calories),akcal:n(r.active_calories),sleep:n(r.sleep_min),deep:n(r.deep_min),rem:n(r.rem_min),
-        light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress),bandNap:n(r.nap_min),worn:n(r.worn_min),sdnn:n(r.sdnn),src:'openstrap'});
-      const o=store.daily[r.date];if(o.stepsSrc==='health'&&old&&old.steps!=null){o.steps=old.steps;o.bandSteps=n(r.steps)}});
+        light:n(r.light_min),eff:n(r.sleep_efficiency),bandSteps:n(r.steps),stress:n(r.stress),bandNap:n(r.nap_min),worn:n(r.worn_min),sdnn:n(r.sdnn),src:'openstrap'})});
     const bk=h.find(x=>/^(battery|batt|battery_pct|battery_level|battery_percent|akku|soc)$/.test(x));
     if(bk){const last=rows.filter(r=>n(r[bk])!=null).pop();if(last)batSet(n(last[bk]),'import')}
     addDev('whoop');return'Tageswerte'}
@@ -694,8 +693,7 @@ function importRows(rows){
       calories_total:'kcal',calories:'akcal',worn_min:'worn',sdnn:'sdnn',skin_temp_z:'tempz',awakenings:'wakes',sol_min:'sol',longest_sleep_min:'longest'};
     let cnt=0;rows.forEach(r=>{const d=r.date,k=MK[r.key],v=n(r.value);if(!d||!k||v==null)return;
       let x=v;if(k==='rec'){x=Math.round(v<=1?v*100:v)}
-      const o0=store.daily[d]||{};if(k==='steps'&&o0.stepsSrc==='health'){store.daily[d]=Object.assign({},o0,{bandSteps:x});cnt++;return}
-      store.daily[d]=Object.assign({},o0,{[k]:x,src:'openstrap'});cnt++});
+      const kk=k==='steps'?'bandSteps':k;store.daily[d]=Object.assign({},store.daily[d],{[kk]:x,src:'openstrap'});cnt++});
     if(cnt){addDev('whoop');return'Kennzahlen'}return null}
   if(h.includes('stage')){
     const by={};rows.forEach(r=>{const a=ts(r.start_ts),b=ts(r.end_ts);if(!r.date||a==null||b==null)return;(by[r.date]=by[r.date]||[]).push([a,b,stageOf(r.stage)])});
@@ -754,6 +752,7 @@ const days=()=>{const k=Object.keys(data.daily).sort(),t=iso(new Date());if(data
 const D=k=>data.daily[k]||{};
 const hist=(f,k,len=30)=>days().filter(x=>x<k).slice(-len).map(f).filter(v=>v!=null);
 function need(k){const p=D(shift(k,-1)).strain;return Math.max(240,Math.round(data.need*60+Math.max(0,(p??10)-10)*5)-napMin(shift(k,-1)))}
+const stepsOf=k=>{const x=D(k),v=[x.bandSteps,x.hSteps,x.steps].filter(q=>q!=null);return v.length?Math.max(...v):null};
 const tSleep=k=>{const v=D(k).sleep,n=napMin(k);return v==null?(n||null):v+n};
 function perf(k){const v=tSleep(k);return v==null?null:Math.min(100,Math.round(v/need(k)*100))}
 function nightInfo(k){if(D(k).sleepManual)return null;const l=data.sleep[k];if(!l||!l.length)return null;const by={wake:0,light:0,deep:0,rem:0};
@@ -776,7 +775,7 @@ const MET={
   eff:{n:'Schlafeffizienz',ic:'moon',f:k=>D(k).eff,v:pct,good:1},
   rec:{n:'Erholung',ic:'pulse',f:k=>D(k).rec,v:pct,good:1},
   strain:{n:'Belastung',ic:'bolt',f:k=>D(k).strain,v:v=>fmt(v,1),good:0},
-  steps:{n:'Schritte',src:k=>D(k).stepsSrc==='health'?'vom iPhone':'vom Band',ic:'shoe',f:k=>D(k).steps,v:v=>fmt(v),good:1},
+  steps:{n:'Schritte',src:k=>{const x=D(k),b=x.bandSteps,h=x.hSteps;if(b!=null&&h!=null)return 'Band '+fmt(b)+' · iPhone '+fmt(h)+' → der höhere zählt';return h!=null?'vom iPhone':b!=null?'vom Band':''},ic:'shoe',f:k=>stepsOf(k),v:v=>fmt(v),good:1},
   kcal:{n:'Kalorien',ic:'flame',f:k=>kTot(k),v:v=>fmt(v),good:0},
   akcal:{n:'Aktive Kalorien',ic:'flame',f:k=>D(k).akcal,v:v=>fmt(v),good:0},
   stress:{n:'Stress',ic:'pulse',f:stressOf,v:v=>fmt(v,1),good:-1},
@@ -1031,8 +1030,8 @@ function bmrOf(k){const ks=Object.keys(store.daily||{}).filter(d=>d<=k&&store.da
 const STEPW=['lauf','run','jogg','wander','hike','spazier','geh','walk'];
 function trainSteps(s){if(!s||s.type==='k')return 0;if(s.dist)return Math.round(s.dist*1300);const n=String(s.sp||s.name||'').toLowerCase();return STEPW.some(w=>n.includes(w))?Math.round(elapsed(s)/6e4*150):0}
 function kParts(k){const x=D(k),ss=sessions().filter(s=>s.date===k),tr=ss.reduce((a,s)=>a+(s.kcal||0),0);
-  if(x.kcal==null&&x.akcal==null&&x.steps==null&&!tr)return null;const b=bmrOf(k).v;let alltag;
-  if(x.steps!=null){const ts=ss.reduce((a,s)=>a+trainSteps(s),0);alltag=Math.round(Math.max(0,x.steps-ts)*bodyKg()*0.0004)}
+  const stp=stepsOf(k);if(x.kcal==null&&x.akcal==null&&stp==null&&!tr)return null;const b=bmrOf(k).v;let alltag;
+  if(stp!=null){const ts=ss.reduce((a,s)=>a+trainSteps(s),0);alltag=Math.round(Math.max(0,stp-ts)*bodyKg()*0.0004)}
   else{const act=x.akcal!=null?x.akcal:Math.max(0,(x.kcal||0)-b);alltag=Math.max(0,act-tr)}
   return {bmr:b,alltag,tr,act:alltag+tr,tot:b+alltag+tr}}
 const kTot=k=>{const p=kParts(k);return p?p.tot:null};
@@ -1106,7 +1105,7 @@ const toHM=m=>m==null?'':Math.floor(m/60)+':'+String(Math.round(m%60)).padStart(
 const toT=t=>t?new Date(t).toTimeString().slice(0,5):'';
 function wStrain(dur,avg){if(!dur)return 0;const hr=avg||130,i=clamp((hr-60)/138,0,1);return dur*i*Math.exp(1.92*i)}
 const toStrain=trimp=>+Math.min(21,Math.log(trimp+1)/Math.log(1.5)).toFixed(1);
-function estStrain(k){const x=store.daily[k]||{},w=store.workouts.filter(o=>o.date===k);return toStrain(w.reduce((a,o)=>a+wStrain(o.dur,o.avg),0)+(x.steps||0)/600)}
+function estStrain(k){const x=store.daily[k]||{},w=store.workouts.filter(o=>o.date===k);return toStrain(w.reduce((a,o)=>a+wStrain(o.dur,o.avg),0)+(stepsOf(k)||0)/600)}
 const EF=[['ERHOLUNG',[['rec','Erholung','%','Trainingsbereitschaft oder Body Battery am Morgen'],['hrv','HRV','ms','Übernacht-Durchschnitt'],['rhr','Ruhepuls','bpm',''],['resp','Atemfrequenz','/min','Atemzüge pro Minute im Schlaf']]],
   ['SCHLAF',[['bed','Eingeschlafen','time',''],['up','Aufgewacht','time',''],['sleep','Schlafdauer','h:mm','z. B. 7:38'],['deep','Tiefschlaf','h:mm',''],['rem','REM','h:mm',''],['light','Leichtschlaf','h:mm',''],['wake','Wach','h:mm','']]],
   ['TAG',[['steps','Schritte','',''],['kcal','Kalorien gesamt','kcal',''],['akcal','Aktive Kalorien','kcal',''],['stress','Stress','0–100','Tagesdurchschnitt'],['strain','Belastung','0–21','Leer lassen: wird aus Aktivitäten geschätzt']]],
@@ -1201,7 +1200,7 @@ function bioAge(k,off=0){const A=n(store.age);if(!A)return null;const end=shift(
   const add=(l,val,show,d)=>{if(val!=null&&isFinite(d))parts.push([l,show,+d.toFixed(1)])};
   const rhr=mv(x=>D(x).rhr);add('Ruhepuls',rhr,fmt(rhr)+' bpm',clamp((rhr-60)*0.15,-4,4));
   const hrv=mv(x=>D(x).hrv),norm=70-0.8*A;add('HRV',hrv,fmt(hrv)+' ms',clamp(-(hrv-norm)*0.08,-4,4));
-  const st=mv(x=>D(x).steps);add('Schritte',st,fmt(st),clamp(-(st-8000)/1000*0.4,-3,3));
+  const st=mv(x=>stepsOf(x));add('Schritte',st,fmt(st),clamp(-(st-8000)/1000*0.4,-3,3));
   const sl=mv(x=>D(x).sleep);if(sl!=null){const h=sl/60;add('Schlafdauer',sl,hm(sl)+' h',h<7?clamp((7-h)*1.2,0,3):h>9.5?clamp((h-9.5)*0.5,0,2):-0.5*Math.min(1,h-7))}
   const wk=data.workouts.filter(w=>ks.includes(w.date)).length/(ks.length/7);add('Training pro Woche',wk,fmt(wk,1)+'×',clamp(-(wk-2)*0.5,-1.5,1.5));
   const lf=lastBody(k,x=>D(x).fat),fat=lf?D(lf).fat:null;if(fat!=null)add('Körperfett',fat,fmt(fat,1)+' %',fat>22?clamp((fat-22)*0.2,0,3):fat<8?clamp((8-fat)*0.2,0,2):-0.3);
@@ -1496,7 +1495,7 @@ async function ntPushAll(){if(!store.nt||store.ntOff)return;const cut=shift(iso(
 // Tages-Schritte an Nutrac: Alltags-Schritte = Band-Schritte minus Schritte im Training.
 // Gleiche ID wie die Schritte-Eingabe in Nutrac ("steps-Datum") → ersetzt dort den Ø-Wert, nichts doppelt.
 async function ntPushSteps(){if(!store.nt||store.ntOff)return;const cut=shift(iso(new Date()),-14),sent=store.ntSteps||(store.ntSteps={});
-  for(const k of Object.keys(store.daily||{}).filter(d=>d>=cut).sort()){const tot=store.daily[k].steps;if(tot==null)continue;
+  for(const k of Object.keys(store.daily||{}).filter(d=>d>=cut).sort()){const tot=stepsOf(k);if(tot==null)continue;
     const ts=sessions().filter(s=>s.date===k).reduce((a,s)=>a+trainSteps(s),0),alltag=Math.max(0,Math.round(tot-ts)),sig=tot+'-'+ts;if(sent[k]===sig)continue;
     const data={kind:'steps',date:k,t:fromIso(k).getTime()+9*36e5,steps:alltag,total:Math.round(tot),trainSteps:ts,src:'whoop'};
     try{await ntFetch('/rest/v1/docs',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:store.nt.uid,col:'food',id:'steps-'+k,date:k,data,updated_at:new Date().toISOString()})});sent[k]=sig;save()}catch(e){break}}}
@@ -1939,7 +1938,7 @@ addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v
 load();(function(){const q=location.search;let msg=[];
   const mb=/[?&]bat=(\d{1,3})\b/.exec(q);if(mb){const v=+mb[1];if(v>=0&&v<=100){batSet(v,'url');msg.push('Akku '+v+' %')}}
   const ms=/[?&]steps=(\d{1,6})\b/.exec(q);if(ms){const v=+ms[1],md=/[?&]date=(\d{4}-\d{2}-\d{2})\b/.exec(q),d=md?md[1]:iso(new Date());
-    if(v>=0&&v<=200000){store.daily[d]=Object.assign({},store.daily[d],{steps:v,stepsSrc:'health'});store.real=true;save();msg.push(fmt(v)+' Schritte')}}
+    if(v>=0&&v<=200000){store.daily[d]=Object.assign({},store.daily[d],{hSteps:v});store.real=true;save();msg.push(fmt(v)+' Schritte')}}
   if(msg.length)setTimeout(()=>toast('Übernommen: '+msg.join(' · ')),400);
   try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}})();
 const h0=fromHash(location.hash.slice(1));if(h0)view=h0;
