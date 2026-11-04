@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793786906";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793805553";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -677,10 +677,18 @@ function importRows(rows){
     rows.forEach(r=>{if(!r.date)return;let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
       store.daily[r.date]=Object.assign({},store.daily[r.date],{rec:rec==null?null:Math.round(rec),rhr:n(r.resting_hr),hrv:n(r.hrv),resp:n(r.resp_rate),strain:n(r.strain),
         kcal:n(r.total_calories),akcal:n(r.active_calories),sleep:n(r.sleep_min),deep:n(r.deep_min),rem:n(r.rem_min),
-        light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress),src:'openstrap'})});
+        light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress),bandNap:n(r.nap_min),worn:n(r.worn_min),sdnn:n(r.sdnn),src:'openstrap'})});
     const bk=h.find(x=>/^(battery|batt|battery_pct|battery_level|battery_percent|akku|soc)$/.test(x));
     if(bk){const last=rows.filter(r=>n(r[bk])!=null).pop();if(last)batSet(n(last[bk]),'import')}
     addDev('whoop');return'Tageswerte'}
+  if(h.includes('key')&&h.includes('value')&&h.includes('date')){
+    const MK={rhr:'rhr',rmssd:'hrv',readiness:'rec',strain:'strain',steps:'steps',resp_rate:'resp',stress:'stress',
+      tst_min:'sleep',deep_min:'deep',rem_min:'rem',light_min:'light',efficiency:'eff',nap_min:'bandNap',
+      calories_total:'kcal',calories:'akcal',worn_min:'worn',sdnn:'sdnn',skin_temp_z:'tempz',awakenings:'wakes',sol_min:'sol',longest_sleep_min:'longest'};
+    let cnt=0;rows.forEach(r=>{const d=r.date,k=MK[r.key],v=n(r.value);if(!d||!k||v==null)return;
+      let x=v;if(k==='rec'){x=Math.round(v<=1?v*100:v)}
+      store.daily[d]=Object.assign({},store.daily[d],{[k]:x,src:'openstrap'});cnt++});
+    if(cnt){addDev('whoop');return'Kennzahlen'}return null}
   if(h.includes('stage')){
     const by={};rows.forEach(r=>{const a=ts(r.start_ts),b=ts(r.end_ts);if(!r.date||a==null||b==null)return;(by[r.date]=by[r.date]||[]).push([a,b,stageOf(r.stage)])});
     Object.entries(by).forEach(([d,l])=>store.sleep[d]=l.sort((x,y)=>x[0]-y[0]));return'Schlafphasen'}
@@ -754,6 +762,7 @@ const MET={
   sleep:{n:'Geschlafene Stunden',ic:'moon',f:k=>tSleep(k),v:hm,good:1},
   night:{n:'Davon nachts',ic:'bed',f:k=>D(k).sleep,v:hm,good:1},
   nap:{n:'Davon Mittagsschlaf',ic:'moon',f:k=>napMin(k)||null,v:hm,good:1},
+  worn:{n:'Band getragen',ic:'strap',f:k=>D(k).worn,v:hm,good:1},
   resto:{n:'Erholsamer Schlaf',ic:'restore',f:resto,v:hm,good:1},
   inbed:{n:'Zeit im Bett',ic:'bed',f:k=>nightInfo(k)?.bed??(D(k).bed&&D(k).up?(D(k).up-D(k).bed)/6e4:null),v:hm,good:0},
   eff:{n:'Schlafeffizienz',ic:'moon',f:k=>D(k).eff,v:pct,good:1},
@@ -847,7 +856,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.k
     ${allQ().filter(([id])=>!(id in (j||{}))).slice(0,3).map(([id,t])=>qRow(id,t,j||{})).join('')}
     <button class="linkb" data-go="logbuch">ALLE FRAGEN BEANTWORTEN ${I.chev}</button></div>`}
   <div class="h-row"><h2 class="h1">Mein Dashboard</h2><button class="mini" data-act="dash-edit">${editDash?'FERTIG':'PERSONALISIEREN'} ${I.pencil}</button></div>
-  ${editDash?`<div class="dash-edit"><p class="hint" style="margin:0 0 4px">Am Griff ≡ festhalten und ziehen, um die Reihenfolge zu ändern. Mit dem Schalter ein- und ausblenden.</p>${(()=>{const all=['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress','weight','fat'],on=store.dash.filter(m=>all.includes(m)),off=all.filter(m=>!on.includes(m));
+  ${editDash?`<div class="dash-edit"><p class="hint" style="margin:0 0 4px">Am Griff ≡ festhalten und ziehen, um die Reihenfolge zu ändern. Mit dem Schalter ein- und ausblenden.</p>${(()=>{const all=['hrv','rhr','resp','perf','sleep','resto','steps','kcal','akcal','stress','weight','fat','worn'],on=store.dash.filter(m=>all.includes(m)),off=all.filter(m=>!on.includes(m));
     return '<div class="dlist">'+on.map(m=>`<div class="dord" data-k="${m}"><span class="grip" data-grip aria-label="Ziehen zum Sortieren">${I.menu}</span><button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="true"><span>${MET[m].n}</span><span class="sw"></span></button></div>`).join('')+'</div>'
       +(off.length?`<p class="hint" style="margin:10px 0 4px">Ausgeblendet</p>`:'')+off.map(m=>`<button class="tog" data-act="dash-tog" data-k="${m}" aria-pressed="false"><span>${MET[m].n}</span><span class="sw"></span></button>`).join('')})()}</div>`
   :data.dash.map(m=>mrow(m,k)).join('')}`}
@@ -889,7 +898,7 @@ function vSleep(k){const x=D(k),p=perf(k),ni=nightInfo(k),nd=need(k);
     <div><b class="num" style="color:var(--mint)">${hm(nd)}</b><span class="tag" style="color:var(--mint);border-color:var(--mint)">SCHLAFBEDARF</span></div></div></div>
   ${napMin(k)?`<div class="card slsplit"><div class="ssh"><span>WORAUS BESTEHT DEIN SCHLAF?</span></div>
     <div><span><i class="sq2" style="background:var(--sleep)"></i>Nacht</span><b class="num">${hm(D(k).sleep)}</b></div>
-    <div><span><i class="sq2" style="background:var(--sleep);opacity:.55"></i>Mittagsschlaf<small>${napsOf(k).length===1?'1 Einheit':napsOf(k).length+' Einheiten'}</small></span><b class="num">${hm(napMin(k))}</b></div>
+    <div><span><i class="sq2" style="background:var(--sleep);opacity:.55"></i>Mittagsschlaf<small>${napsOf(k).length?(napsOf(k).length===1?'1 Einheit':napsOf(k).length+' Einheiten'):'vom Band erkannt'}</small></span><b class="num">${hm(napMin(k))}</b></div>
     <div class="tot"><span>Gesamt</span><b class="num">${hm(tSleep(k))}</b></div></div>`:''}
   ${insight(...sleepInsight(k))}
   <div class="sec"><span>Schlafaktivitäten</span></div>
@@ -975,7 +984,7 @@ function vJournal(k){const j=(data.journal&&data.journal[jKey(k)])||{},cq=cqList
   <button class="cta" data-act="jsave">LOGBUCH SPEICHERN</button>`}
 
 const MCOL={weight:'#c9d2d8',fat:'#c9d2d8',hrv:'#c9d2d8',rhr:'#c9d2d8',resp:'#c9d2d8',stress:'#c9d2d8',perf:'var(--sleep)',sleep:'var(--sleep)',resto:'var(--sleep)',inbed:'var(--sleep)',eff:'var(--sleep)',strain:'var(--strain)',steps:'var(--strain)',kcal:'var(--strain)',akcal:'var(--strain)'};
-const MINFO={hrv:'Die Herzfrequenzvariabilität misst, wie stark der Abstand zwischen deinen Herzschlägen im Schlaf schwankt. Ein höherer Wert als sonst zeigt meist, dass dein Nervensystem gut erholt ist.',
+const MINFO={worn:'Wie lange du das Band an diesem Tag getragen hast. Je mehr Stunden, desto genauer werden Erholung und Belastung.',nap:'Die Zeit, die du tagsüber geschlafen hast. Sie zählt zu deinem Gesamtschlaf und senkt deinen Bedarf für die nächste Nacht.',night:'Die Zeit, die du nachts geschlafen hast, ohne Mittagsschlaf.',hrv:'Die Herzfrequenzvariabilität misst, wie stark der Abstand zwischen deinen Herzschlägen im Schlaf schwankt. Ein höherer Wert als sonst zeigt meist, dass dein Nervensystem gut erholt ist.',
   rhr:'Dein Ruhepuls im Schlaf. Liegt er unter deinem Schnitt, spricht das für gute Erholung. Ein erhöhter Wert kann von Stress, Alkohol, spätem Essen oder einer beginnenden Erkältung kommen.',
   resp:'Atemzüge pro Minute im Schlaf. Der Wert bleibt meist sehr stabil. Steigt er plötzlich an, kann das ein frühes Zeichen für eine Erkältung sein.',
   perf:'Wie viel Prozent deines Schlafbedarfs du geschafft hast. Ab 85 % gilt die Nacht als optimal.',
@@ -1348,7 +1357,8 @@ function sheetOutlook(k){const x=D(k),t=target(x.rec),ni=nightInfo(k),nn=need(sh
 const NAPD=[20,25,30,45,60,90];
 const naps=()=>store.naps||(store.naps=[]);
 const napsOf=k=>naps().filter(n=>n.date===k).sort((a,b)=>a.t0-b.t0);
-const napMin=k=>napsOf(k).reduce((a,n)=>a+Math.round((n.t1-n.t0)/6e4),0);
+const napOwn=k=>napsOf(k).reduce((a,n)=>a+Math.round((n.t1-n.t0)/6e4),0);
+const napMin=k=>Math.max(napOwn(k),Math.round(D(k).bandNap||0));
 const napDur=()=>store.napDur||25;
 const napLeft=()=>store.nap?store.nap.t0+store.nap.dur*6e4-Date.now():0;
 function napRows(k){return napsOf(k).map(n=>{const mn=Math.round((n.t1-n.t0)/6e4);
@@ -1888,7 +1898,7 @@ document.addEventListener('change',async e=>{
     for(const f of files){try{let r=null;if(/\.pdf$/i.test(f.name)||f.type==='application/pdf')r=await importPdf(f);else{const t=await f.text();r=importRows(parseCSV(t))}if(r)done.push(r)}catch(err){console.error(err)}}
     e.target.value='';
     if(done.length){store.real=true;save();cur=null;pickData();render();ntPushAll().catch(()=>{});const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.'}
-    else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Erkannt werden Withings-Berichte (PDF), weight.csv und der CSV-Export aus OpenStrap.'}}}
+    else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Erkannt werden Withings-Berichte (PDF), weight.csv und die CSV-Tabellen aus OpenStrap.'}}}
 });
 document.addEventListener('input',e=>{if(e.target.id==='wipeword'){const ok=e.target.value.trim().toUpperCase()==='LÖSCHEN',b=$('#wipe3');if(b){b.disabled=!ok;b.style.opacity=ok?1:.4}}});
 document.addEventListener('toggle',e=>{const g=e.target&&e.target.dataset&&e.target.dataset.g;if(g){if(e.target.open)moreOpen.add(g);else moreOpen.delete(g)}},true);
