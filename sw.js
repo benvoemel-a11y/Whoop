@@ -7,8 +7,8 @@ self.addEventListener('push', e => {
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data && e.data.text() }; }
   e.waitUntil(self.registration.showNotification(d.title || 'Whoop By Me', {
     body: d.body || '',
-    icon: 'icon.png',
-    badge: 'icon.png',
+    icon: 'app-icon-512.png',
+    badge: 'app-icon-512.png',
     tag: d.tag || 'wbm',
     data: { url: d.url || './#home' }
   }));
