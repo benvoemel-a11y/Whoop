@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793810057";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793810119";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -117,7 +117,7 @@ main#view{flex:1 1 auto;width:100%;min-width:0;min-height:0;overflow-y:auto;over
 /* Kennzahlen-Zeilen */
 .mrow{width:100%;text-align:left;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:12px;background:var(--card);border-radius:14px;padding:15px 16px}
 .mrow+.mrow{margin-top:10px}
-.ssync{display:inline-grid;vertical-align:-3px;margin-left:8px;width:18px;height:18px;color:var(--muted);cursor:pointer}.ssync svg,.ssbtn svg{width:16px;height:16px}
+.ssync{display:inline-grid;vertical-align:-11px;margin:-8px -8px -8px 0;padding:8px;width:34px;height:34px;box-sizing:border-box;color:var(--muted);cursor:pointer}.ssync svg,.ssbtn svg{width:16px;height:16px}
 .ssbtn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--card);color:var(--fg);margin:14px 0 4px}
 .mic{color:var(--muted);display:grid}
 .mic svg{width:24px;height:24px}
@@ -551,6 +551,7 @@ html,body{min-height:100%}
 .napask{border:1px solid var(--sleep)}
 .napask .dq-h svg{color:var(--sleep)}
 .rgt{justify-self:end;display:flex;align-items:center;gap:12px}
+.lft{justify-self:start;display:flex;align-items:center;gap:10px}
 .impbtn{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
 .impbtn svg{width:21px;height:21px}
 .impbtn:active{background:rgba(255,255,255,.2)}
@@ -1813,7 +1814,7 @@ function head(){const ds=days(),i=ds.indexOf(cur);
   let tabs='';
   if(DETAIL[view])tabs=`<div class="tabs" role="tablist">${Object.entries(DETAIL).map(([k,l])=>`<button role="tab" data-go="${k}" aria-selected="${view===k}">${l}</button>`).join('')}</div>`;
   if(view==='trends')tabs=`<div class="tabs" role="tablist" style="justify-content:space-around">${Object.entries(TT).map(([k,l])=>`<button role="tab" data-act="ttab" data-t="${k}" aria-selected="${trendTab===k}">${l}</button>`).join('')}</div>`;
-  return `<div class="top">${av}${mid}<span class="rgt">${imp}${strap}</span></div>${tabs}`}
+  return `<div class="top"><span class="lft">${av}${imp}</span>${mid}<span class="rgt">${strap}</span></div>${tabs}`}
 function navHtml(){const it=[['home','Startseite','home'],['ueberblick','Überblick','heart'],['training','Training','lift'],['mehr','Mehr','menu']];
   const m=v=>DETAIL[v]||v==='trends'?'ueberblick':v==='nap'?'home':TBACK[v]?'training':v;const act=SUB.includes(view)&&!TBACK[view]?m(prevView):m(view);
   return it.map(([v,l,ic])=>`<button data-go="${v}" ${act===v?'aria-current="page"':''}>${I[ic]}<span>${l}</span></button>`).join('')}
