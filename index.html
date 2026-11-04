@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793808445";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793810057";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -117,6 +117,8 @@ main#view{flex:1 1 auto;width:100%;min-width:0;min-height:0;overflow-y:auto;over
 /* Kennzahlen-Zeilen */
 .mrow{width:100%;text-align:left;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:12px;background:var(--card);border-radius:14px;padding:15px 16px}
 .mrow+.mrow{margin-top:10px}
+.ssync{display:inline-grid;vertical-align:-3px;margin-left:8px;width:18px;height:18px;color:var(--muted);cursor:pointer}.ssync svg,.ssbtn svg{width:16px;height:16px}
+.ssbtn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--card);color:var(--fg);margin:14px 0 4px}
 .mic{color:var(--muted);display:grid}
 .mic svg{width:24px;height:24px}
 .mlbl{font-size:13px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;line-height:1.3}
@@ -574,6 +576,7 @@ const $=s=>document.querySelector(s);
 /* ---------- Icons ---------- */
 const sv=(p,f)=>`<svg viewBox="0 0 24 24" fill="${f?'currentColor':'none'}" stroke="${f?'none':'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const I={
+  sync:sv('<path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" stroke-width="2.4"/>'),
   l:sv('<path d="M15 5l-7 7 7 7" stroke-width="3"/>'),
   r:sv('<path d="M9 5l7 7-7 7" stroke-width="3"/>'),
   chev:sv('<path d="M9 5l7 7-7 7" stroke-width="2.4"/>'),
@@ -786,7 +789,8 @@ function mrow(key,k){
   const m=MET[key],v=m.f(k),a=mean(hist(m.f,k));let tri='<span></span>';
   if(v!=null&&a!=null&&Math.abs(v-a)/(Math.abs(a)||1)>=.01){const up=v>a;tri=`<i class="tri ${up?'up':'dn'} ${m.good&&(up===(m.good>0))?'good':''}"></i>`}
   const eat=key==='kcal'&&store.nt&&store.eat?store.eat[k]:null,sub=eat!=null?`<small class="msub">Gegessen ${fmt(eat)}${v!=null?` · Bilanz ${eat-v>0?'+':eat-v<0?'−':'±'}${fmt(Math.abs(eat-v))}`:''}</small>`:'';
-  return `<button class="mrow" data-act="metric" data-k="${key}"><span class="mic">${I[m.ic]}</span><span class="mlbl">${m.n}${sub}</span>
+  const sy=key==='steps'&&k===iso(new Date())?`<span class="ssync" role="button" aria-label="Schritte aktualisieren" data-act="steps-sync">${I.sync}</span>`:'';
+  return `<button class="mrow" data-act="metric" data-k="${key}"><span class="mic">${I[m.ic]}</span><span class="mlbl">${m.n}${sy}${sub}</span>
     <span class="mval"><b class="num">${v==null?'–':m.v(v)}</b>${tri}<small class="num">${a==null?'':m.v(a)}</small></span></button>`}
 
 /* ---------- Grafik ---------- */
@@ -1071,6 +1075,7 @@ function vMetric(key,k){if(key==='kcal')return vKcal(k);const body=BODY.includes
   <div class="mbig"><b class="num">${v==null?'–':m.v(v)}</b><span>${m.u||''}</span></div>
   <p class="jsub">${m.src?m.src(k)+' · ':''}${body&&lk&&lk!==k?'Letzte Messung: '+fromIso(lk).toLocaleDateString('de-DE',{day:'numeric',month:'long'})+' · ':''}Schnitt der letzten 30 Tage: <b class="num" style="color:var(--fg)">${a==null?'–':m.v(a)}</b> ${m.u||''}</p>
   <div class="seg"><button data-act="mrange" data-r="7" aria-pressed="${mRange===7}">7 TAGE</button><button data-act="mrange" data-r="30" aria-pressed="${mRange===30}">30 TAGE</button>${body?`<button data-act="mrange" data-r="0" aria-pressed="${mRange===0}">ALLE</button>`:''}</div>
+  ${key==='steps'?`<button class="btn ssbtn" data-act="steps-sync">${I.sync} SCHRITTE AKTUALISIEREN</button>`:''}
   ${barChart(keys,vals,m,key,ra)}
   <div class="tstats"><div><span class="l">MINIMUM</span><b class="num">${valid.length?m.v(Math.min(...valid)):'–'}</b></div><div><span class="l">DURCHSCHNITT</span><b class="num">${ra==null?'–':m.v(ra)}</b></div><div><span class="l">MAXIMUM</span><b class="num">${valid.length?m.v(Math.max(...valid)):'–'}</b></div></div>
   <p class="tnote">Gestrichelte Linie: Durchschnitt im Zeitraum</p>
@@ -1826,6 +1831,7 @@ function toast(t){const el=document.createElement('div');el.className='toast';el
 function stepDay(d){const ds=days(),i=ds.indexOf(cur)+d;if(ds[i]){cur=ds[i];render()}}
 function journalSet(q,v){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};if(j[q]===v)delete j[q];else j[q]=v;if(q==='caffeine'&&j.caffeine===1&&!j.caffeine_n)j.caffeine_n=1;save();if(data!==store)data.journal=store.journal;render()}
 function act(a,el){
+  if(a==='steps-sync'){location.href='shortcuts://run-shortcut?name='+encodeURIComponent('Schritte holen');return}
   if(a.startsWith('t-')){tAct(a,el);return}
   if(a==='batfull'){batSet(100,'full');pushSyncSoon();render();toast('Auf 100 % gesetzt');return}
   if(a==='batedit'){sheetBat();return}
