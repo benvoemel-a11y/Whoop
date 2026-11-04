@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793807922";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793808252";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -680,10 +680,11 @@ function importRows(rows){
     Object.entries(best).forEach(([d,v])=>{store.daily[d]=Object.assign({},store.daily[d],{weight:+v.w.toFixed(1)},v.f!=null?{fat:v.f}:{},v.mu!=null?{muscle:+v.mu.toFixed(1)}:{},v.bo!=null?{bone:+v.bo.toFixed(1)}:{},v.hy!=null&&v.w?{water:+(v.hy/v.w*100).toFixed(1)}:{})});
     if(Object.keys(best).length)addDev('withings');return Object.keys(best).length?'Gewicht':null}
   if(h.includes('readiness')||h.includes('resting_hr')){
-    rows.forEach(r=>{if(!r.date)return;let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
+    rows.forEach(r=>{if(!r.date)return;const old=store.daily[r.date];let rec=n(r.readiness);if(rec!=null&&rec<=1)rec*=100;
       store.daily[r.date]=Object.assign({},store.daily[r.date],{rec:rec==null?null:Math.round(rec),rhr:n(r.resting_hr),hrv:n(r.hrv),resp:n(r.resp_rate),strain:n(r.strain),
         kcal:n(r.total_calories),akcal:n(r.active_calories),sleep:n(r.sleep_min),deep:n(r.deep_min),rem:n(r.rem_min),
-        light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress),bandNap:n(r.nap_min),worn:n(r.worn_min),sdnn:n(r.sdnn),src:'openstrap'})});
+        light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress),bandNap:n(r.nap_min),worn:n(r.worn_min),sdnn:n(r.sdnn),src:'openstrap'});
+      const o=store.daily[r.date];if(o.stepsSrc==='health'&&old&&old.steps!=null){o.steps=old.steps;o.bandSteps=n(r.steps)}});
     const bk=h.find(x=>/^(battery|batt|battery_pct|battery_level|battery_percent|akku|soc)$/.test(x));
     if(bk){const last=rows.filter(r=>n(r[bk])!=null).pop();if(last)batSet(n(last[bk]),'import')}
     addDev('whoop');return'Tageswerte'}
@@ -693,7 +694,8 @@ function importRows(rows){
       calories_total:'kcal',calories:'akcal',worn_min:'worn',sdnn:'sdnn',skin_temp_z:'tempz',awakenings:'wakes',sol_min:'sol',longest_sleep_min:'longest'};
     let cnt=0;rows.forEach(r=>{const d=r.date,k=MK[r.key],v=n(r.value);if(!d||!k||v==null)return;
       let x=v;if(k==='rec'){x=Math.round(v<=1?v*100:v)}
-      store.daily[d]=Object.assign({},store.daily[d],{[k]:x,src:'openstrap'});cnt++});
+      const o0=store.daily[d]||{};if(k==='steps'&&o0.stepsSrc==='health'){store.daily[d]=Object.assign({},o0,{bandSteps:x});cnt++;return}
+      store.daily[d]=Object.assign({},o0,{[k]:x,src:'openstrap'});cnt++});
     if(cnt){addDev('whoop');return'Kennzahlen'}return null}
   if(h.includes('stage')){
     const by={};rows.forEach(r=>{const a=ts(r.start_ts),b=ts(r.end_ts);if(!r.date||a==null||b==null)return;(by[r.date]=by[r.date]||[]).push([a,b,stageOf(r.stage)])});
@@ -774,7 +776,7 @@ const MET={
   eff:{n:'Schlafeffizienz',ic:'moon',f:k=>D(k).eff,v:pct,good:1},
   rec:{n:'Erholung',ic:'pulse',f:k=>D(k).rec,v:pct,good:1},
   strain:{n:'Belastung',ic:'bolt',f:k=>D(k).strain,v:v=>fmt(v,1),good:0},
-  steps:{n:'Schritte',ic:'shoe',f:k=>D(k).steps,v:v=>fmt(v),good:1},
+  steps:{n:'Schritte',src:k=>D(k).stepsSrc==='health'?'vom iPhone':'vom Band',ic:'shoe',f:k=>D(k).steps,v:v=>fmt(v),good:1},
   kcal:{n:'Kalorien',ic:'flame',f:k=>kTot(k),v:v=>fmt(v),good:0},
   akcal:{n:'Aktive Kalorien',ic:'flame',f:k=>D(k).akcal,v:v=>fmt(v),good:0},
   stress:{n:'Stress',ic:'pulse',f:stressOf,v:v=>fmt(v,1),good:-1},
@@ -1068,7 +1070,7 @@ function vMetric(key,k){if(key==='kcal')return vKcal(k);const body=BODY.includes
   const keys=Array.from({length:range},(_,i)=>shift(k,i-range+1)),vals=keys.map(x=>data.daily[x]?m.f(x):null),valid=vals.filter(v=>v!=null),lk=body?lastBody(k,m.f):k,v=lk?m.f(lk):null,a=mean(hist(m.f,k)),ra=mean(valid);
   return `<div class="mhead"><span class="mic">${I[m.ic]}</span><h2>${m.n}</h2></div>
   <div class="mbig"><b class="num">${v==null?'–':m.v(v)}</b><span>${m.u||''}</span></div>
-  <p class="jsub">${body&&lk&&lk!==k?'Letzte Messung: '+fromIso(lk).toLocaleDateString('de-DE',{day:'numeric',month:'long'})+' · ':''}Schnitt der letzten 30 Tage: <b class="num" style="color:var(--fg)">${a==null?'–':m.v(a)}</b> ${m.u||''}</p>
+  <p class="jsub">${m.src?m.src(k)+' · ':''}${body&&lk&&lk!==k?'Letzte Messung: '+fromIso(lk).toLocaleDateString('de-DE',{day:'numeric',month:'long'})+' · ':''}Schnitt der letzten 30 Tage: <b class="num" style="color:var(--fg)">${a==null?'–':m.v(a)}</b> ${m.u||''}</p>
   <div class="seg"><button data-act="mrange" data-r="7" aria-pressed="${mRange===7}">7 TAGE</button><button data-act="mrange" data-r="30" aria-pressed="${mRange===30}">30 TAGE</button>${body?`<button data-act="mrange" data-r="0" aria-pressed="${mRange===0}">ALLE</button>`:''}</div>
   ${barChart(keys,vals,m,key,ra)}
   <div class="tstats"><div><span class="l">MINIMUM</span><b class="num">${valid.length?m.v(Math.min(...valid)):'–'}</b></div><div><span class="l">DURCHSCHNITT</span><b class="num">${ra==null?'–':m.v(ra)}</b></div><div><span class="l">MAXIMUM</span><b class="num">${valid.length?m.v(Math.max(...valid)):'–'}</b></div></div>
@@ -1934,7 +1936,12 @@ addEventListener('keydown',e=>{if(e.key==='Escape')$('#sheet').hidden=true;if(e.
 function fromHash(h){if(h.startsWith('m-')&&MET[h.slice(2)]){metricKey=h.slice(2);return'metric'}return DETAIL[h]||MAIN.includes(h)||SUB.includes(h)?h:null}
 addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v&&(v!==view||v==='metric')){if(!SUB.includes(view))prevView=view;view=v;render()}});
 
-load();(function(){const m=/[?&]bat=(\d{1,3})\b/.exec(location.search);if(!m)return;const v=+m[1];if(v>=0&&v<=100){batSet(v,'url');setTimeout(()=>toast('Akku: '+v+' %'),400)}try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}})();
+load();(function(){const q=location.search;let msg=[];
+  const mb=/[?&]bat=(\d{1,3})\b/.exec(q);if(mb){const v=+mb[1];if(v>=0&&v<=100){batSet(v,'url');msg.push('Akku '+v+' %')}}
+  const ms=/[?&]steps=(\d{1,6})\b/.exec(q);if(ms){const v=+ms[1],md=/[?&]date=(\d{4}-\d{2}-\d{2})\b/.exec(q),d=md?md[1]:iso(new Date());
+    if(v>=0&&v<=200000){store.daily[d]=Object.assign({},store.daily[d],{steps:v,stepsSrc:'health'});store.real=true;save();msg.push(fmt(v)+' Schritte')}}
+  if(msg.length)setTimeout(()=>toast('Übernommen: '+msg.join(' · ')),400);
+  try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}})();
 const h0=fromHash(location.hash.slice(1));if(h0)view=h0;
 pickData();render();
 setTimeout(pushSync,1500);
