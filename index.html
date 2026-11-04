@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793805882";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793807922";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -548,6 +548,10 @@ html,body{min-height:100%}
 .bpill svg{display:block}
 .napask{border:1px solid var(--sleep)}
 .napask .dq-h svg{color:var(--sleep)}
+.rgt{justify-self:end;display:flex;align-items:center;gap:12px}
+.impbtn{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.impbtn svg{width:21px;height:21px}
+.impbtn:active{background:rgba(255,255,255,.2)}
 </style>
 </head>
 <body>
@@ -1790,6 +1794,7 @@ function dayLabel(k){const t=iso(new Date());return k===t?'HEUTE':k===shift(t,-1
 function head(){const ds=days(),i=ds.indexOf(cur);
   const lbl=!store.real?'DEMO':({openstrap:'WHOOP'})[D(cur).src]||'';
   const bn=store.bat&&Date.now()-store.bat.at<10*864e5?batNow():null,bp=bn?bn.p:null;
+  const imp=`<label class="impbtn" for="file" title="Daten holen" aria-label="Daten aus Edge holen">${I.imp}</label>`;
   const strap=`<button class="strap" data-go="geraete" aria-label="Geräte${bp!=null?', Akku '+bp+' Prozent':''}">${bp!=null?`<span class="bpill" style="color:${batCol(bp)}">${batIcon(bp,20)}<b>${bp}%</b></span>`:(lbl?lbl+' ':'')}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></button>`;
   const av=SUB.includes(view)?`<button class="avatar" style="background:rgba(255,255,255,.08);color:#fff" data-act="back" aria-label="Zurück"><span style="width:18px;height:18px;display:grid">${I.l}</span></button>`:`<button class="avatar" style="background:${avc()};color:${avtx(avc())}" data-go="mehr" aria-label="Profil">${esc((data.name||'B')[0].toUpperCase())}</button>`;
   let mid;
@@ -1802,7 +1807,7 @@ function head(){const ds=days(),i=ds.indexOf(cur);
   let tabs='';
   if(DETAIL[view])tabs=`<div class="tabs" role="tablist">${Object.entries(DETAIL).map(([k,l])=>`<button role="tab" data-go="${k}" aria-selected="${view===k}">${l}</button>`).join('')}</div>`;
   if(view==='trends')tabs=`<div class="tabs" role="tablist" style="justify-content:space-around">${Object.entries(TT).map(([k,l])=>`<button role="tab" data-act="ttab" data-t="${k}" aria-selected="${trendTab===k}">${l}</button>`).join('')}</div>`;
-  return `<div class="top">${av}${mid}${strap}</div>${tabs}`}
+  return `<div class="top">${av}${mid}<span class="rgt">${imp}${strap}</span></div>${tabs}`}
 function navHtml(){const it=[['home','Startseite','home'],['ueberblick','Überblick','heart'],['training','Training','lift'],['mehr','Mehr','menu']];
   const m=v=>DETAIL[v]||v==='trends'?'ueberblick':v==='nap'?'home':TBACK[v]?'training':v;const act=SUB.includes(view)&&!TBACK[view]?m(prevView):m(view);
   return it.map(([v,l,ic])=>`<button data-go="${v}" ${act===v?'aria-current="page"':''}>${I[ic]}<span>${l}</span></button>`).join('')}
@@ -1894,7 +1899,7 @@ function act(a,el){
   else if(a==='mine'){store.real=true;save();cur=null;pickData();render()}
   else if(a==='wipe1')sheetWipe(1);
   else if(a==='wipe2')sheetWipe(2);
-  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,routines:store.routines,plan:store.plan,lib:store.lib,nt:store.nt,ntOff:store.ntOff,napDur:store.napDur,napAsk:store.napAsk,bat:store.bat,batLog:store.batLog,ntDec:store.ntDec,height:store.height,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
+  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,routines:store.routines,plan:store.plan,lib:store.lib,nt:store.nt,ntOff:store.ntOff,napDur:store.napDur,napAsk:store.napAsk,lastImp:store.lastImp,bat:store.bat,batLog:store.batLog,ntDec:store.ntDec,height:store.height,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-act]');if(!t)return;if(t.dataset.go){$('#sheet').hidden=true;go(t.dataset.go)}else act(t.dataset.act,t)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('#sheet').hidden=true});
@@ -1911,8 +1916,8 @@ document.addEventListener('change',async e=>{
   else if(e.target.id==='file'){const done=[],files=[...e.target.files];const m0=$('#msg');if(m0){m0.className='msg';m0.textContent='Wird gelesen …'}
     for(const f of files){try{let r=null;if(/\.pdf$/i.test(f.name)||f.type==='application/pdf')r=await importPdf(f);else{const t=await f.text();r=importRows(parseCSV(t))}if(r)done.push(r)}catch(err){console.error(err)}}
     e.target.value='';
-    if(done.length){store.real=true;save();cur=null;pickData();render();ntPushAll().catch(()=>{});const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.'}
-    else{const m=$('#msg');if(m){m.className='msg err';m.textContent='Keine passende Datei gefunden. Erkannt werden Withings-Berichte (PDF), weight.csv und die CSV-Tabellen aus OpenStrap.'}}}
+    if(done.length){store.real=true;store.lastImp=Date.now();save();cur=null;pickData();render();ntPushAll().catch(()=>{});const m=$('#msg');if(m)m.textContent='Importiert: '+done.join(', ')+'.';toast('Importiert: '+done.join(', '))}
+    else{const t='Keine passende Datei gefunden. Erkannt werden Withings-Berichte (PDF), weight.csv und die CSV-Tabellen aus OpenStrap.';const m=$('#msg');if(m){m.className='msg err';m.textContent=t}else toast('Keine passende Datei gefunden')}}
 });
 document.addEventListener('input',e=>{if(e.target.id==='wipeword'){const ok=e.target.value.trim().toUpperCase()==='LÖSCHEN',b=$('#wipe3');if(b){b.disabled=!ok;b.style.opacity=ok?1:.4}}});
 document.addEventListener('toggle',e=>{const g=e.target&&e.target.dataset&&e.target.dataset.g;if(g){if(e.target.open)moreOpen.add(g);else moreOpen.delete(g)}},true);
