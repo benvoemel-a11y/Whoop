@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793805553";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793805882";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -546,6 +546,8 @@ html,body{min-height:100%}
 .batq button{background:var(--card);border-radius:10px;padding:12px 0;font-family:var(--num);font-weight:700;font-size:15px;color:var(--muted)}
 .bpill{display:flex;align-items:center;gap:5px;font-family:var(--num);font-weight:700;font-size:14px}
 .bpill svg{display:block}
+.napask{border:1px solid var(--sleep)}
+.napask .dq-h svg{color:var(--sleep)}
 </style>
 </head>
 <body>
@@ -848,7 +850,7 @@ function vHome(k){const x=D(k),p=perf(k),j=data.journal?.[jKey(k)],jn=j?Object.k
   ${ageCard(k)}
   <div class="h-row"><h2 class="h1">Mein Tag</h2><button class="plus" data-go="logbuch" aria-label="Logbuch ausfüllen">${I.plus}</button></div>
   <div class="otiles"><button class="outlook" data-go="ausblick">${I.sun}<span>Ausblick</span></button>${napTile()}</div>
-  ${k===iso(new Date())?askCard():''}
+  ${k===iso(new Date())?askCard()+napAskCard():''}
   ${acts(k)}
   <div class="card jcard jc"><div class="card-h"><span>MEIN LOGBUCH · ${jLabel(k)==='gestern'?'GESTERN':fromIso(jKey(k)).toLocaleDateString('de-DE',{day:'numeric',month:'numeric'})}</span><span class="ring-ok ${jn?'done':''}">${I.check}</span></div>
     ${jDoneK(k)?`<p>Ausgefüllt · ${jn} von ${allQ().length} Fragen beantwortet.</p><button class="linkb" data-go="logbuch">LOGBUCH BEARBEITEN ${I.chev}</button></div>`:`
@@ -1364,6 +1366,16 @@ const napLeft=()=>store.nap?store.nap.t0+store.nap.dur*6e4-Date.now():0;
 function napRows(k){return napsOf(k).map(n=>{const mn=Math.round((n.t1-n.t0)/6e4);
   return `<button class="act act-s" data-act="napedit" data-id="${n.id}"><div class="badge" style="background:var(--sleep);opacity:.9">${I.moon}<span>${hm(mn)}</span></div><div class="act-n">MITTAGSSCHLAF</div>
   <div class="act-t"><span>${tm(n.t0)}</span><span>${tm(n.t1)}</span></div><i class="act-b" style="background:var(--sleep)"></i></button>`}).join('')}
+// Frage nach dem Mittagsschlaf, wenn das Band keinen erkannt hat
+function napAskDay(){const t=iso(new Date());for(const k of [shift(t,-1),t]){const x=D(k);
+  if(!store.real||x.src!=='openstrap'||!(x.worn>60))continue;
+  if(napMin(k)>0)continue;
+  const j=(store.journal||{})[k]||{};if(j.nap!=null)continue;
+  if((store.napAsk||{})[k])continue;return k}return null}
+function napAskCard(){const k=napAskDay();if(!k)return '';const t=iso(new Date());
+  return `<div class="card napask"><div class="dq-h">${I.moon}<b>Mittagsschlaf ${k===t?'heute':'gestern'}?</b></div>
+    <p class="hint" style="margin:4px 0 12px">Das Band hat keinen erkannt. Falls du doch geschlafen hast, trag ihn nach, damit dein Schlaf stimmt.</p>
+    <div class="t-two"><button class="btn w" style="margin:0" data-act="napask-ja" data-k="${k}">JA, NACHTRAGEN</button><button class="btn g" style="margin:0" data-act="napask-nein" data-k="${k}">NEIN</button></div></div>`}
 function napTile(){const a=store.nap;
   if(a)return `<button class="outlook nap live" data-go="nap">${I.moon}<span class="nt"><b class="num" id="nap-c">${mmss(Math.max(0,napLeft()))}</b><small>bis ${tm(a.t0+a.dur*6e4)}</small></span></button>`;
   return `<button class="outlook nap" data-go="nap">${I.moon}<span>Mittagsschlaf</span><span class="chev">${I.chev}</span></button>`}
@@ -1814,6 +1826,8 @@ function act(a,el){
   if(a==='batq'){const i=$('#bat_p');if(i)i.value=el.dataset.v;return}
   if(a==='batsave'){const v=tnum(($('#bat_p')||{}).value);if(v==null||v<0||v>100){toast('Bitte 0 bis 100 eintragen');return}batSet(v,'manual');pushSyncSoon();$('#sheet').hidden=true;render();toast('Ladestand gespeichert');return}
   if(a==='batdel'){store.bat=null;store.batLog=[];save();pushSyncSoon();$('#sheet').hidden=true;render();toast('Gelöscht');return}
+  if(a==='napask-ja'){cur=el.dataset.k;sheetNap(null);return}
+  if(a==='napask-nein'){const k=el.dataset.k;store.journal[k]=Object.assign({},store.journal[k],{nap:0});store.napAsk=Object.assign({},store.napAsk,{[k]:1});save();if(data!==store)data.journal=store.journal;render();toast('Notiert');return}
   if(a==='napdur'){store.napDur=+el.dataset.d;save();render();return}
   if(a==='napstart'){napStart();return}
   if(a==='napstop'){napStop(true);return}
@@ -1880,7 +1894,7 @@ function act(a,el){
   else if(a==='mine'){store.real=true;save();cur=null;pickData();render()}
   else if(a==='wipe1')sheetWipe(1);
   else if(a==='wipe2')sheetWipe(2);
-  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,routines:store.routines,plan:store.plan,lib:store.lib,nt:store.nt,ntOff:store.ntOff,napDur:store.napDur,bat:store.bat,batLog:store.batLog,ntDec:store.ntDec,height:store.height,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
+  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,routines:store.routines,plan:store.plan,lib:store.lib,nt:store.nt,ntOff:store.ntOff,napDur:store.napDur,napAsk:store.napAsk,bat:store.bat,batLog:store.batLog,ntDec:store.ntDec,height:store.height,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-act]');if(!t)return;if(t.dataset.go){$('#sheet').hidden=true;go(t.dataset.go)}else act(t.dataset.act,t)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('#sheet').hidden=true});
