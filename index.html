@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793813315";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793813424";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1312,6 +1312,9 @@ function vMore(){const nd=Object.keys(store.daily||{}).length;
   ${grp('einst','Einstellungen','Anzeige und Beispieldaten',`
     <button class="btn g" data-act="demo" style="margin-top:0">${store.real?'BEISPIELDATEN ANSEHEN':'BEISPIELDATEN WERDEN ANGEZEIGT'}</button>
     ${store.real?'':(nd?'<button class="btn g" data-act="mine">MEINE DATEN ANZEIGEN</button>':'')}`)}
+  ${grp('backup','Backup','Alle Daten sichern und wiederherstellen',`<p class="about" style="margin-top:0">Speichert alles aus dieser App in eine Datei: Band-Daten, Schritte, Logbuch, Trainings und Einstellungen. Vor dem Löschen der App oder einem Gerätewechsel sichern.</p>
+    <button class="btn g" data-act="bk-save">BACKUP SPEICHERN</button>
+    <label class="btn g" for="bkfile" style="background:var(--card);color:var(--fg)">BACKUP LADEN</label><input id="bkfile" type="file" accept=".json,application/json" hidden>`)}
   ${grp('loeschen','Daten löschen','Alles auf diesem Gerät zurücksetzen',`<p class="about" style="margin-top:0">Löscht alle importierten Werte, Logbuch-Antworten und Geräte. Profil und Einstellungen bleiben.</p><button class="btn warn" data-act="wipe1">MEINE DATEN LÖSCHEN …</button>`)}
   ${grp('ueber','Über die App','',`<p class="about" style="margin-top:0">Deine Daten bleiben nur auf diesem Gerät. Das Band wird über OpenStrap Edge synchronisiert, diese App zeigt die Werte an. Erholung und Belastung stammen aus den Berechnungen von OpenStrap, nicht von Whoop.</p>`)}
   <p class="tnote" style="margin-top:18px">Version ${window.APP_BUILD?new Date(+window.APP_BUILD*1000).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Vorschau'} · PDF-Import aktiv</p>`}
@@ -1835,10 +1838,15 @@ const scrollMem={};const SC=()=>$('#view');
 function go(v,restore){if(view==='routine'&&v!=='routine')tLeaveRoutine();scrollMem[view]=SC()?SC().scrollTop:0;if(!SUB.includes(view))prevView=view;view=v;editDash=false;jEdit=false;const h=v==='metric'?'m-'+metricKey:v;if(location.hash!=='#'+h){try{history.replaceState(null,'','#'+h)}catch(e){location.hash=h}}render();const y=restore?(scrollMem[v]||0):0;if(SC())SC().scrollTop=y;requestAnimationFrame(()=>{if(SC())SC().scrollTop=y})}
 function addQ(t,cat){t=String(t||'').trim();if(!t)return;store.customQ=store.customQ||[];const tq=(t.endsWith('?')?t:t+'?').toLowerCase();if(store.customQ.some(c=>c.t.toLowerCase()===tq)||STDT().has(tq)){toast('Diese Frage gibt es schon');return}
   const q=t.endsWith('?')?t:t+'?',c=cat&&CATS.includes(cat)?cat:autoCat(q);store.customQ.push({id:'c'+Date.now().toString(36),t:q,cat:c});save();if(data!==store)data.customQ=store.customQ;render();toast('Hinzugefügt unter '+c[0]+c.slice(1).toLowerCase())}
+async function bkSave(){const d=iso(new Date()),name='whoop-backup-'+d+'.json',txt=JSON.stringify({app:'whoop-by-me',v:1,date:new Date().toISOString(),store});
+  const f=new File([txt],name,{type:'application/json'});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
+  const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),1800)}
 function stepDay(d){const ds=days(),i=ds.indexOf(cur)+d;if(ds[i]){cur=ds[i];render()}}
 function journalSet(q,v){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};if(j[q]===v)delete j[q];else j[q]=v;if(q==='caffeine'&&j.caffeine===1&&!j.caffeine_n)j.caffeine_n=1;save();if(data!==store)data.journal=store.journal;render()}
 function act(a,el){
+  if(a==='bk-save'){bkSave();return}
   if(a==='steps-sync'){location.href='shortcuts://run-shortcut?name='+encodeURIComponent('Schritte holen');return}
   if(a.startsWith('t-')){tAct(a,el);return}
   if(a==='batfull'){batSet(100,'full');pushSyncSoon();render();toast('Auf 100 % gesetzt');return}
@@ -1928,6 +1936,10 @@ document.addEventListener('change',async e=>{
   else if(e.target.id==='height'){const v=n(e.target.value);if(v&&v>=120&&v<=230){store.height=Math.round(v);save();pickData();render();toast('Größe gespeichert')}}
   else if(e.target.id==='age'){const v=n(e.target.value);if(v&&v>=10&&v<=100){store.age=Math.round(v);save();pickData();render();toast('Alter gespeichert')}}
   else if(e.target.id==='name'){store.name=e.target.value.trim()||'Bene';save();pickData();render()}
+  else if(e.target.id==='bkfile'){const f=e.target.files[0];e.target.value='';if(!f)return;
+    try{const j=JSON.parse(await f.text()),st=j&&j.store;if(!st||!st.daily)throw 0;
+      if(!confirm('Backup vom '+new Date(j.date||Date.now()).toLocaleDateString('de-DE')+' laden? Die aktuellen Daten in der App werden ersetzt.'))return;
+      store=Object.assign(DEF(),st);save();pickData();render();toast('Backup geladen')}catch(err){toast('Das ist keine gültige Backup-Datei')}}
   else if(e.target.id==='file'){const done=[],files=[...e.target.files];const m0=$('#msg');if(m0){m0.className='msg';m0.textContent='Wird gelesen …'}
     for(const f of files){try{let r=null;if(/\.pdf$/i.test(f.name)||f.type==='application/pdf')r=await importPdf(f);else{const t=await f.text();r=importRows(parseCSV(t))}if(r)done.push(r)}catch(err){console.error(err)}}
     e.target.value='';
