@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793784874";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793786189";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1130,22 +1130,34 @@ const batLog=()=>store.batLog||(store.batLog=[]);
 function batSet(p,src){p=Math.round(clamp(p,0,100));store.bat={p,at:Date.now(),src:src||'manual'};
   const L=batLog();if(!L.length||L[L.length-1].p!==p||Date.now()-L[L.length-1].t>36e5)L.push({t:Date.now(),p});
   if(L.length>12)L.splice(0,L.length-12);save()}
+const BAT_DEF=22; // Prozent pro Tag, Startwert für das Whoop 4.0
+function batRate(){const L=batLog().filter(x=>Date.now()-x.t<20*864e5),rs=[];
+  for(let i=1;i<L.length;i++){const h=(L[i].t-L[i-1].t)/36e5,d=L[i-1].p-L[i].p;if(d>1&&h>=1)rs.push(d/h*24)}
+  if(!rs.length)return {r:BAT_DEF,lernt:true};rs.sort((a,b)=>a-b);const m=rs[Math.floor(rs.length/2)];
+  return {r:clamp(m,5,60),lernt:rs.length<2}}
+function batNow(){const b=store.bat;if(!b)return null;
+  const h=(Date.now()-b.at)/36e5;if(h<0.5)return {p:b.p,gesch:false};
+  const p=Math.max(0,b.p-batRate().r*h/24);return {p:Math.round(p),gesch:true}}
+function batLowAt(){const b=store.bat;if(!b)return null;const r=batRate().r;if(r<=0)return null;
+  const t=b.at+(b.p-15)/r*864e5;return t>Date.now()?t:null}
 function batDays(){const L=batLog().filter(x=>Date.now()-x.t<12*864e5);if(L.length<2)return null;
   let a=null,b=null;for(let i=L.length-1;i>0;i--){if(L[i].p<L[i-1].p){b=L[i];a=L[i-1];break}}
-  if(!a||!b)return null;const h=(b.t-a.t)/36e5,d=a.p-b.p;if(h<2||d<2)return null;
-  const perDay=d/h*24;if(perDay<=0)return null;const left=store.bat.p/perDay;return left>0.3&&left<30?left:null}
+  const r=batRate().r,now=batNow();if(!now||r<=0)return null;const left=now.p/r;return left>=0&&left<30?left:null}
 const batCol=p=>p==null?'var(--muted)':p<=15?'var(--red)':p<=35?'var(--s-high)':'var(--mint)';
 function batIcon(p,w){const f=p==null?0:clamp(p,0,100)/100;
   return `<svg viewBox="0 0 38 20" style="width:${w||38}px;height:auto" aria-hidden="true"><rect x="1" y="1" width="30" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="33" y="7" width="4" height="6" rx="2" fill="currentColor" opacity=".5"/><rect x="4" y="4" width="${Math.max(0,24*f)}" height="12" rx="3" fill="currentColor"/></svg>`}
 function batAge(){if(!store.bat)return '';const h=(Date.now()-store.bat.at)/36e5;
   return h<1?'gerade eben':h<24?'vor '+Math.round(h)+' Std.':'vor '+Math.round(h/24)+' Tagen'}
-function batCard(){const b=store.bat,d=b?batDays():null;
-  return `<div class="card batc"><div class="bath"><span style="color:${batCol(b&&b.p)}">${batIcon(b?b.p:null,44)}</span>
-    <span class="batx"><b>${b?b.p+' %':'Akku unbekannt'}</b><small>${b?'Stand '+batAge()+(d?' · reicht noch ca. '+(d<1?Math.round(d*24)+' Std.':fmt(d,d<2?1:0)+' Tage'):''):'Trag den Stand aus OpenStrap ein.'}</small></span></div>
-    <div class="batbar"><i style="width:${b?b.p:0}%;background:${batCol(b&&b.p)}"></i></div>
-    <button class="btn g" data-act="batedit" style="margin-top:12px">${b?'LADESTAND AKTUALISIEREN':'LADESTAND EINTRAGEN'}</button></div>`}
+function batCard(){const b=store.bat,now=batNow(),d=b?batDays():null,R=batRate();
+  const sub=!b?'Tippe auf „Voll geladen“, wenn du das Band vom Ladegerät nimmst.'
+    :[now.gesch?'geschätzt':'gemessen '+batAge(),d!=null?'reicht noch ca. '+(d<1?Math.round(d*24)+' Std.':fmt(d,d<2?1:0)+' Tage'):'',R.lernt?'lernt noch':'~'+Math.round(R.r)+' % pro Tag'].filter(Boolean).join(' · ');
+  return `<div class="card batc"><div class="bath"><span style="color:${batCol(now&&now.p)}">${batIcon(now?now.p:null,44)}</span>
+    <span class="batx"><b>${now?(now.gesch?'ca. ':'')+now.p+' %':'Akku unbekannt'}</b><small>${sub}</small></span></div>
+    <div class="batbar"><i style="width:${now?now.p:0}%;background:${batCol(now&&now.p)}"></i></div>
+    <div class="t-two" style="margin-top:12px"><button class="btn w" style="margin:0" data-act="batfull">VOLL GELADEN</button><button class="btn g" style="margin:0" data-act="batedit">GENAUER WERT</button></div>
+    <p class="hint" style="font-size:13px">Die App liest den Akku nicht selbst aus. Sie rechnet ihn aus deinem Verbrauch hoch und meldet sich, wenn das Band bald leer ist.</p></div>`}
 function sheetBat(){const b=store.bat;
-  openSheet('LADESTAND',`<p class="about" style="margin-top:0">Trag ein, was OpenStrap gerade anzeigt. Die App kann den Akku nicht selbst auslesen.</p>
+  openSheet('LADESTAND',`<p class="about" style="margin-top:0">Trag ein, was OpenStrap gerade anzeigt. Danach rechnet die App selbst weiter.</p>
     <div class="batq">${[100,75,50,25,10].map(v=>`<button data-act="batq" data-v="${v}">${v} %</button>`).join('')}</div>
     <div class="field"><label for="bat_p">Ladestand (%)</label><input id="bat_p" inputmode="numeric" value="${b?b.p:''}" placeholder="z. B. 72"></div>
     <button class="btn w" data-act="batsave" style="margin-top:14px">SPEICHERN</button>
@@ -1208,7 +1220,7 @@ const pushOk=()=>'serviceWorker'in navigator&&'PushManager'in window&&'Notificat
 const DEF_REM=()=>[{t:'07:00',title:'Guten Morgen',body:'Deine Werte der Nacht sind da. Importiere sie und füll dein Logbuch für gestern aus.',url:'./#mehr',on:true},{t:'14:00',title:'Update am Mittag',body:'Neue Werte bereit: jetzt importieren.',url:'./#mehr',on:true},{t:'22:00',title:'Abend-Update',body:'Deine Tageswerte sind bereit: jetzt importieren.',url:'./#mehr',on:true}];
 const DEF_MON=()=>({day:1,t:'10:00',on:true});
 const pRem=()=>store.pushRem||(store.pushRem=DEF_REM());const pMon=()=>store.pushMon||(store.pushMon=DEF_MON());
-function cfgString(){if(!store.push)return '';return JSON.stringify(Object.assign(JSON.parse(store.push),{rem:pRem(),mon:pMon(),nap:store.nap?{at:store.nap.t0+store.nap.dur*6e4,dur:store.nap.dur}:null,ntuid:store.nt?store.nt.uid:null,ntDone:Object.keys(store.ntDec||{}).slice(-150)}))}
+function cfgString(){if(!store.push)return '';return JSON.stringify(Object.assign(JSON.parse(store.push),{rem:pRem(),mon:pMon(),nap:store.nap?{at:store.nap.t0+store.nap.dur*6e4,dur:store.nap.dur}:null,bat:store.bat?{at:batLowAt()||0}:null,ntuid:store.nt?store.nt.uid:null,ntDone:Object.keys(store.ntDec||{}).slice(-150)}))}
 const SB_URL='https://wjbvodjiqjtlezuzgrzn.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqYnZvZGppcWp0bGV6dXpncnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMjk5NDAsImV4cCI6MjEwODcwNTk0MH0.hk7c23aKSk_O8bUMJoL2ActBDHpAdOgxZI9K_0bvEyM';
 const rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
 function pushIds(){if(!store.pushId){store.pushId=crypto.randomUUID?crypto.randomUUID():([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));store.pushTok=rnd(32);save()}return{id:store.pushId,token:store.pushTok}}
@@ -1754,7 +1766,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 function dayLabel(k){const t=iso(new Date());return k===t?'HEUTE':k===shift(t,-1)?'GESTERN':fromIso(k).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()}
 function head(){const ds=days(),i=ds.indexOf(cur);
   const lbl=!store.real?'DEMO':({openstrap:'WHOOP'})[D(cur).src]||'';
-  const bp=store.bat&&Date.now()-store.bat.at<5*864e5?store.bat.p:null;
+  const bn=store.bat&&Date.now()-store.bat.at<10*864e5?batNow():null,bp=bn?bn.p:null;
   const strap=`<button class="strap" data-go="geraete" aria-label="Geräte${bp!=null?', Akku '+bp+' Prozent':''}">${bp!=null?`<span class="bpill" style="color:${batCol(bp)}">${batIcon(bp,20)}<b>${bp}%</b></span>`:(lbl?lbl+' ':'')}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></button>`;
   const av=SUB.includes(view)?`<button class="avatar" style="background:rgba(255,255,255,.08);color:#fff" data-act="back" aria-label="Zurück"><span style="width:18px;height:18px;display:grid">${I.l}</span></button>`:`<button class="avatar" style="background:${avc()};color:${avtx(avc())}" data-go="mehr" aria-label="Profil">${esc((data.name||'B')[0].toUpperCase())}</button>`;
   let mid;
@@ -1786,10 +1798,11 @@ function stepDay(d){const ds=days(),i=ds.indexOf(cur)+d;if(ds[i]){cur=ds[i];rend
 function journalSet(q,v){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};if(j[q]===v)delete j[q];else j[q]=v;if(q==='caffeine'&&j.caffeine===1&&!j.caffeine_n)j.caffeine_n=1;save();if(data!==store)data.journal=store.journal;render()}
 function act(a,el){
   if(a.startsWith('t-')){tAct(a,el);return}
+  if(a==='batfull'){batSet(100,'full');pushSyncSoon();render();toast('Auf 100 % gesetzt');return}
   if(a==='batedit'){sheetBat();return}
   if(a==='batq'){const i=$('#bat_p');if(i)i.value=el.dataset.v;return}
-  if(a==='batsave'){const v=tnum(($('#bat_p')||{}).value);if(v==null||v<0||v>100){toast('Bitte 0 bis 100 eintragen');return}batSet(v,'manual');$('#sheet').hidden=true;render();toast('Ladestand gespeichert');return}
-  if(a==='batdel'){store.bat=null;store.batLog=[];save();$('#sheet').hidden=true;render();toast('Gelöscht');return}
+  if(a==='batsave'){const v=tnum(($('#bat_p')||{}).value);if(v==null||v<0||v>100){toast('Bitte 0 bis 100 eintragen');return}batSet(v,'manual');pushSyncSoon();$('#sheet').hidden=true;render();toast('Ladestand gespeichert');return}
+  if(a==='batdel'){store.bat=null;store.batLog=[];save();pushSyncSoon();$('#sheet').hidden=true;render();toast('Gelöscht');return}
   if(a==='napdur'){store.napDur=+el.dataset.d;save();render();return}
   if(a==='napstart'){napStart();return}
   if(a==='napstop'){napStop(true);return}
@@ -1891,7 +1904,8 @@ addEventListener('keydown',e=>{if(e.key==='Escape')$('#sheet').hidden=true;if(e.
 function fromHash(h){if(h.startsWith('m-')&&MET[h.slice(2)]){metricKey=h.slice(2);return'metric'}return DETAIL[h]||MAIN.includes(h)||SUB.includes(h)?h:null}
 addEventListener('hashchange',()=>{const v=fromHash(location.hash.slice(1));if(v&&(v!==view||v==='metric')){if(!SUB.includes(view))prevView=view;view=v;render()}});
 
-load();const h0=fromHash(location.hash.slice(1));if(h0)view=h0;
+load();(function(){const m=/[?&]bat=(\d{1,3})\b/.exec(location.search);if(!m)return;const v=+m[1];if(v>=0&&v<=100){batSet(v,'url');setTimeout(()=>toast('Akku: '+v+' %'),400)}try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}})();
+const h0=fromHash(location.hash.slice(1));if(h0)view=h0;
 pickData();render();
 setTimeout(pushSync,1500);
 (function(){const vv=window.visualViewport;if(!vv)return;
