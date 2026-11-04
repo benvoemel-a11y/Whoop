@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://benvoemel-a11y.github.io/Whoop/og.png">
-<script>window.APP_BUILD="1793778618";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1793784874";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD){location.replace(location.pathname+"?v="+v+location.hash)}}).catch(()=>{})}chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <title>Whoop By Me</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -536,6 +536,16 @@ html,body{min-height:100%}
 .slbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:-4px 0 10px}
 .slbtns button{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--card);border-radius:12px;padding:13px 10px;font-size:14px;font-weight:700;color:var(--fg)}
 .slbtns svg{width:17px;height:17px;flex:none;color:var(--sleep)}
+.batc{padding:16px 14px 14px}
+.bath{display:flex;align-items:center;gap:14px}
+.batx b{display:block;font-size:22px;font-weight:700}
+.batx small{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.batbar{height:8px;border-radius:5px;background:var(--track);overflow:hidden;margin-top:14px}
+.batbar i{display:block;height:100%;border-radius:5px;transition:width .4s}
+.batq{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:4px}
+.batq button{background:var(--card);border-radius:10px;padding:12px 0;font-family:var(--num);font-weight:700;font-size:15px;color:var(--muted)}
+.bpill{display:flex;align-items:center;gap:5px;font-family:var(--num);font-weight:700;font-size:14px}
+.bpill svg{display:block}
 </style>
 </head>
 <body>
@@ -668,6 +678,8 @@ function importRows(rows){
       store.daily[r.date]=Object.assign({},store.daily[r.date],{rec:rec==null?null:Math.round(rec),rhr:n(r.resting_hr),hrv:n(r.hrv),resp:n(r.resp_rate),strain:n(r.strain),
         kcal:n(r.total_calories),akcal:n(r.active_calories),sleep:n(r.sleep_min),deep:n(r.deep_min),rem:n(r.rem_min),
         light:n(r.light_min),eff:n(r.sleep_efficiency),steps:n(r.steps),stress:n(r.stress),src:'openstrap'})});
+    const bk=h.find(x=>/^(battery|batt|battery_pct|battery_level|battery_percent|akku|soc)$/.test(x));
+    if(bk){const last=rows.filter(r=>n(r[bk])!=null).pop();if(last)batSet(n(last[bk]),'import')}
     addDev('whoop');return'Tageswerte'}
   if(h.includes('stage')){
     const by={};rows.forEach(r=>{const a=ts(r.start_ts),b=ts(r.end_ts);if(!r.date||a==null||b==null)return;(by[r.date]=by[r.date]||[]).push([a,b,stageOf(r.stage)])});
@@ -1114,9 +1126,35 @@ const SETUP={
   whoop:['Band am Akku-Pack voll laden.','Die offizielle Whoop-App löschen, falls sie installiert ist. Das Band kann immer nur mit einer App verbunden sein.','<b>OpenStrap Edge</b> öffnen, Bluetooth erlauben und das Band koppeln.','Eine Nacht tragen. Danach gibt es Erholung und Schlafphasen.','In OpenStrap den <b>CSV-Export</b> öffnen: „Daily metrics“, „Sleep stages“ und „Workouts“ exportieren und hier auswählen.'],
   withings:['Im Withings-Konto die Daten exportieren.','Hier die Datei <b>weight.csv</b> auswählen.']};
 let devOpen=null;
+const batLog=()=>store.batLog||(store.batLog=[]);
+function batSet(p,src){p=Math.round(clamp(p,0,100));store.bat={p,at:Date.now(),src:src||'manual'};
+  const L=batLog();if(!L.length||L[L.length-1].p!==p||Date.now()-L[L.length-1].t>36e5)L.push({t:Date.now(),p});
+  if(L.length>12)L.splice(0,L.length-12);save()}
+function batDays(){const L=batLog().filter(x=>Date.now()-x.t<12*864e5);if(L.length<2)return null;
+  let a=null,b=null;for(let i=L.length-1;i>0;i--){if(L[i].p<L[i-1].p){b=L[i];a=L[i-1];break}}
+  if(!a||!b)return null;const h=(b.t-a.t)/36e5,d=a.p-b.p;if(h<2||d<2)return null;
+  const perDay=d/h*24;if(perDay<=0)return null;const left=store.bat.p/perDay;return left>0.3&&left<30?left:null}
+const batCol=p=>p==null?'var(--muted)':p<=15?'var(--red)':p<=35?'var(--s-high)':'var(--mint)';
+function batIcon(p,w){const f=p==null?0:clamp(p,0,100)/100;
+  return `<svg viewBox="0 0 38 20" style="width:${w||38}px;height:auto" aria-hidden="true"><rect x="1" y="1" width="30" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="33" y="7" width="4" height="6" rx="2" fill="currentColor" opacity=".5"/><rect x="4" y="4" width="${Math.max(0,24*f)}" height="12" rx="3" fill="currentColor"/></svg>`}
+function batAge(){if(!store.bat)return '';const h=(Date.now()-store.bat.at)/36e5;
+  return h<1?'gerade eben':h<24?'vor '+Math.round(h)+' Std.':'vor '+Math.round(h/24)+' Tagen'}
+function batCard(){const b=store.bat,d=b?batDays():null;
+  return `<div class="card batc"><div class="bath"><span style="color:${batCol(b&&b.p)}">${batIcon(b?b.p:null,44)}</span>
+    <span class="batx"><b>${b?b.p+' %':'Akku unbekannt'}</b><small>${b?'Stand '+batAge()+(d?' · reicht noch ca. '+(d<1?Math.round(d*24)+' Std.':fmt(d,d<2?1:0)+' Tage'):''):'Trag den Stand aus OpenStrap ein.'}</small></span></div>
+    <div class="batbar"><i style="width:${b?b.p:0}%;background:${batCol(b&&b.p)}"></i></div>
+    <button class="btn g" data-act="batedit" style="margin-top:12px">${b?'LADESTAND AKTUALISIEREN':'LADESTAND EINTRAGEN'}</button></div>`}
+function sheetBat(){const b=store.bat;
+  openSheet('LADESTAND',`<p class="about" style="margin-top:0">Trag ein, was OpenStrap gerade anzeigt. Die App kann den Akku nicht selbst auslesen.</p>
+    <div class="batq">${[100,75,50,25,10].map(v=>`<button data-act="batq" data-v="${v}">${v} %</button>`).join('')}</div>
+    <div class="field"><label for="bat_p">Ladestand (%)</label><input id="bat_p" inputmode="numeric" value="${b?b.p:''}" placeholder="z. B. 72"></div>
+    <button class="btn w" data-act="batsave" style="margin-top:14px">SPEICHERN</button>
+    ${b?'<button class="btn warn" data-act="batdel">WERT LÖSCHEN</button>':''}
+    <button class="btn g" data-act="close">ABBRECHEN</button>`)}
 function vDevices(){const ds=store.devices||{},list=Object.keys(ds);
   const when=t=>t?new Date(t).toLocaleDateString('de-DE',{day:'numeric',month:'short'})+', '+tm(t):'–';
   return `<h2 class="jtitle">Geräte</h2><p class="jsub">${store.real?'Deine Werte kommen von diesen Geräten.':'Gerade siehst du Beispieldaten. Füge ein Gerät hinzu, um deine eigenen Werte zu sehen.'}</p>
+  ${batCard()}
   ${list.length?list.map(t=>`<div class="dev"><span class="dic">${I[DEV[t].ic]}</span><span class="dtx"><b>${DEV[t].n}</b><span>Letzter Import: ${when(ds[t].last)}</span></span><span class="dok">${I.check}</span></div>`).join(''):''}
   <label class="btn w" for="file" style="margin-top:16px">NEUE DATEN IMPORTIEREN</label>
   <div class="msg" id="msg" role="status"></div>
@@ -1716,7 +1754,8 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 function dayLabel(k){const t=iso(new Date());return k===t?'HEUTE':k===shift(t,-1)?'GESTERN':fromIso(k).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()}
 function head(){const ds=days(),i=ds.indexOf(cur);
   const lbl=!store.real?'DEMO':({openstrap:'WHOOP'})[D(cur).src]||'';
-  const strap=`<button class="strap" data-go="geraete" aria-label="Geräte">${lbl?lbl+' ':''}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></button>`;
+  const bp=store.bat&&Date.now()-store.bat.at<5*864e5?store.bat.p:null;
+  const strap=`<button class="strap" data-go="geraete" aria-label="Geräte${bp!=null?', Akku '+bp+' Prozent':''}">${bp!=null?`<span class="bpill" style="color:${batCol(bp)}">${batIcon(bp,20)}<b>${bp}%</b></span>`:(lbl?lbl+' ':'')}<span style="width:24px;height:24px;display:grid">${I.strap}</span><i class="dot ${store.real?'on':''}"></i></button>`;
   const av=SUB.includes(view)?`<button class="avatar" style="background:rgba(255,255,255,.08);color:#fff" data-act="back" aria-label="Zurück"><span style="width:18px;height:18px;display:grid">${I.l}</span></button>`:`<button class="avatar" style="background:${avc()};color:${avtx(avc())}" data-go="mehr" aria-label="Profil">${esc((data.name||'B')[0].toUpperCase())}</button>`;
   let mid;
   if(view==='mehr')mid='<span class="htitle">MEHR</span>';
@@ -1747,6 +1786,10 @@ function stepDay(d){const ds=days(),i=ds.indexOf(cur)+d;if(ds[i]){cur=ds[i];rend
 function journalSet(q,v){const jk=jKey(cur),j=store.journal[jk]=store.journal[jk]||{};if(j[q]===v)delete j[q];else j[q]=v;if(q==='caffeine'&&j.caffeine===1&&!j.caffeine_n)j.caffeine_n=1;save();if(data!==store)data.journal=store.journal;render()}
 function act(a,el){
   if(a.startsWith('t-')){tAct(a,el);return}
+  if(a==='batedit'){sheetBat();return}
+  if(a==='batq'){const i=$('#bat_p');if(i)i.value=el.dataset.v;return}
+  if(a==='batsave'){const v=tnum(($('#bat_p')||{}).value);if(v==null||v<0||v>100){toast('Bitte 0 bis 100 eintragen');return}batSet(v,'manual');$('#sheet').hidden=true;render();toast('Ladestand gespeichert');return}
+  if(a==='batdel'){store.bat=null;store.batLog=[];save();$('#sheet').hidden=true;render();toast('Gelöscht');return}
   if(a==='napdur'){store.napDur=+el.dataset.d;save();render();return}
   if(a==='napstart'){napStart();return}
   if(a==='napstop'){napStop(true);return}
@@ -1813,7 +1856,7 @@ function act(a,el){
   else if(a==='mine'){store.real=true;save();cur=null;pickData();render()}
   else if(a==='wipe1')sheetWipe(1);
   else if(a==='wipe2')sheetWipe(2);
-  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,routines:store.routines,plan:store.plan,lib:store.lib,nt:store.nt,ntOff:store.ntOff,napDur:store.napDur,ntDec:store.ntDec,height:store.height,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
+  else if(a==='wipe3'){const w=$('#wipeword');if(!w||w.value.trim().toUpperCase()!=='LÖSCHEN')return;const keep={need:store.need,name:store.name,dash:store.dash,age:store.age,avColor:store.avColor,customQ:store.customQ,hiddenQ:store.hiddenQ,routines:store.routines,plan:store.plan,lib:store.lib,nt:store.nt,ntOff:store.ntOff,napDur:store.napDur,bat:store.bat,batLog:store.batLog,ntDec:store.ntDec,height:store.height,push:store.push,pushRem:store.pushRem,pushMon:store.pushMon,pushId:store.pushId,pushTok:store.pushTok,pushSynced:store.pushSynced,dashW:1};store=Object.assign(DEF(),keep);save();$('#sheet').hidden=true;cur=null;pickData();render();toast('Daten gelöscht')}
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-act]');if(!t)return;if(t.dataset.go){$('#sheet').hidden=true;go(t.dataset.go)}else act(t.dataset.act,t)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('#sheet').hidden=true});
