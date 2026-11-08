@@ -127,6 +127,19 @@ function onGone() {
   emit('status');
 }
 
+// Ohne Auswahlfenster wieder verbinden (wenn der Browser das Band schon kennt)
+export async function autoConnect() {
+  if (state.connected) return true;
+  if (!supported() || !navigator.bluetooth.getDevices) return false;
+  try {
+    const list = await navigator.bluetooth.getDevices();
+    const d = list.find(x => /whoop/i.test(x.name || '')) || list[0];
+    if (!d) return false;
+    if (dev !== d) { dev = d; dev.addEventListener('gattserverdisconnected', onGone); }
+    await connect(); return true;
+  } catch { return false; }
+}
+
 export async function connect() {
   if (!supported()) throw new Error('Dieser Browser kann kein Bluetooth – Pulse in Bluefy öffnen');
   if (!dev || !dev.gatt) {

@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" href="icon-512.png">
 <link rel="manifest" href="manifest.json">
 <title>Pulse</title>
-<script>window.APP_BUILD="1794155044";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD&&window.APP_BUILD.indexOf("__")<0&&!(window.__busy&&window.__busy())){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}window.__chk=chk;chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
+<script>window.APP_BUILD="1794156160";(function(){function chk(){fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null).then(v=>{v=(v||"").trim();if(v&&v!==window.APP_BUILD&&window.APP_BUILD.indexOf("__")<0&&!(window.__busy&&window.__busy())){var q=new URLSearchParams(location.search);q.set("v",v);location.replace(location.pathname+"?"+q.toString()+location.hash)}}).catch(()=>{})}window.__chk=chk;chk();document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()})})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>
@@ -715,7 +715,7 @@ function syncForm(){if(shKind==='wo'){const w=shCtx.w;w.date=val('wdate');w.dur=
 /* ================= Whoop direkt (Bluetooth) ================= */
 let syncMsg='';
 const BS=()=>window.Strap?Strap.state:{};
-function bandCard(){const st=BS(),last=S.band&&S.band.last;if(!last&&!st.connected)return'';
+function bandCard(){const st=BS(),last=S.band&&S.band.last;if(!last&&!st.connected&&!(window.Strap&&Strap.supported()))return'';
   const age=last?Math.round((Date.now()-last)/36e5):null;
   return`<div class="card tap" data-act="sheet" data-s="strap" style="display:flex;align-items:center;gap:12px;padding:12px 14px">
    <div style="width:10px;height:10px;border-radius:50%;background:${st.connected?'var(--green)':'var(--dim)'}"></div>
@@ -739,7 +739,11 @@ function batSeen(){const b=BS().battery,c=BS().charging;if(b==null)return;const 
   if(c){if(last&&last[1]<b-5)S.batLog=[];return}
   if(!last||last[1]!==b||Date.now()-last[0]>36e5){l.push([Date.now(),b]);if(l.length>30)l.shift();save()}
   if(b<15&&Date.now()-batWarned>36e5){batWarned=Date.now();toast('Band-Akku '+b+' % – bitte Akku-Pack aufstecken')}}
-window.addEventListener('strap-ready',()=>{Strap.on('status',()=>{batSeen();if(tab==='heute'||tab==='mehr')render();if(shKind==='strap')reSheet()});
+let autoBusy=false;
+async function autoSync(){if(autoBusy||!window.Strap||!Strap.supported()||Strap.state.syncing)return;const last=S.band&&S.band.last||0;if(Date.now()-last<15*6e4)return;
+  autoBusy=true;try{const ok=Strap.state.connected||await Strap.autoConnect();if(ok)await bandSync();else{S.needTap=1;render()}}catch(e){}autoBusy=false}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoSync,800)});
+window.addEventListener('strap-ready',()=>{setTimeout(autoSync,1200);Strap.on('status',()=>{batSeen();if(tab==='heute'||tab==='mehr')render();if(shKind==='strap')reSheet()});
   let lt=0;Strap.on('live',hr=>liveTick(hr));Strap.on('live',()=>{if(Date.now()-lt<3000)return;lt=Date.now();if(tab==='heute')render();if(shKind==='strap')reSheet()});
   Strap.on('progress',p=>{syncMsg='Lade Verlauf … '+new Date(p.last*1000).toLocaleString('de-DE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});if(shKind==='strap')reSheet()});render()});
 
